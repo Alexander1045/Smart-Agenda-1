@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Configuración</title>
+    <style>
+        /* ===== ESTILOS MODERNOS (fondo azul oscuro unificado) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: flex-start; flex: 1; padding-top: 80px; }
+        .container {
+            background: white; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 600px; margin: 0 20px 20px 20px; padding: 40px; transition: all 0.3s ease;
+        }
+        .header { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .logo-container { width: 80px; height: 80px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #f5f5f5; }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        input {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px;
+            font-size: 14px; transition: all 0.2s; font-family: inherit;
+        }
+        input:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.1); }
+        input:read-only { background-color: #f5f5f5; cursor: default; }
+        .ayuda { font-size: 12px; color: #888; margin-top: 5px; }
+        button {
+            width: 100%; padding: 14px; background-color: #d4af37; color: #333; border: none;
+            border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #c9a227; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+        .btn-secundario { background-color: #6c757d; color: white; margin-top: 10px; }
+        .btn-secundario:hover { background-color: #5a6268; }
+        .btn-peligro { background-color: #dc3545; color: white; margin-top: 20px; }
+        .btn-peligro:hover { background-color: #c82333; }
+        .alert { padding: 12px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; display: none; }
+        .alert-success { background-color: #d4edda; border: 2px solid #28a745; color: #155724; }
+        .alert-error { background-color: #f8d7da; border: 2px solid #dc3545; color: #721c24; }
+        .alert.show { display: block; }
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+        }
+        .modal-custom .modal-contenido button {
+            margin-top: 15px;
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        .modal-botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .modal-botones button { margin: 0; padding: 8px 20px; }
+        .btn-cancelar { background-color: #6c757d !important; color: white; }
+        @media (max-width: 768px) {
+            .content { padding-top: 70px; }
+            .container { padding: 20px; margin: 0 15px 20px 15px; }
+            .header { flex-direction: column; text-align: center; }
+            .logo-container { width: 60px; height: 60px; }
+            .header-content h1 { font-size: 22px; }
+            .hamburger-menu { top: 12px; left: 12px; padding: 10px; }
+            .hamburger-menu span { width: 24px; height: 2.5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" onclick="closeSidebar()">📊 Dashboard</a>
+        <a href="agregar_evento.html" onclick="closeSidebar()">📋 Crear Evento</a>
+        <a href="editar_evento.html" onclick="closeSidebar()">✏️ Editar Evento</a>
+        <a href="habitos.html" onclick="closeSidebar()">⭐ Agregar Hábitos</a>
+        <a href="juegos.html" onclick="closeSidebar()">🎮 MiniJuegos</a>
+        <a href="chat.html" onclick="closeSidebar()">🤖 Asistente IA</a>
+        <a href="historial.html" onclick="closeSidebar()">📜 Historial</a>
+        <a href="configuracion.html" class="active" onclick="closeSidebar()">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container"><img src="logo.png" alt="Smart Agenda Logo" class="logo"></div>
+                <div class="header-content"><h1>Smart Agenda</h1><p>Configuración de cuenta</p></div>
+            </div>
+
+            <div id="alertContainer" class="alert"></div>
+
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="nombre">Nombre</label>
+                    <input type="text" id="nombre" required>
+                    <div class="ayuda">Mínimo 3 caracteres</div>
+                </div>
+                <div class="form-group">
+                    <label for="usuario">Usuario (no editable)</label>
+                    <input type="text" id="usuario" readonly>
+                    <div class="ayuda">El nombre de usuario no se puede cambiar por ahora.</div>
+                </div>
+                <div class="form-group">
+                    <label for="telefono">Teléfono</label>
+                    <input type="tel" id="telefono" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Nueva contraseña (opcional)</label>
+                    <input type="password" id="password" placeholder="Déjalo vacío si no quieres cambiarla">
+                    <div class="ayuda">Mínimo 6 caracteres si la cambias</div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar nueva contraseña</label>
+                    <input type="password" id="confirmPassword" placeholder="Repite la contraseña">
+                </div>
+                <button type="submit">💾 Guardar Cambios</button>
+            </form>
+
+            <!-- Botón para eliminar cuenta -->
+            <button id="btnEliminarCuenta" class="btn-peligro">🗑️ Eliminar mi cuenta permanentemente</button>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar cuenta -->
+    <div id="modalEliminarCuenta" class="modal-custom">
+        <div class="modal-contenido">
+            <div style="font-size: 48px;">⚠️</div>
+            <h3>¿Eliminar cuenta?</h3>
+            <p>Esta acción es <strong>irreversible</strong>. Se borrarán todos tus eventos, hábitos, historial y preferencias. ¿Estás seguro?</p>
+            <div class="modal-botones">
+                <button id="confirmarEliminar" style="background-color: #dc3545; color: white;">Sí, eliminar</button>
+                <button id="cancelarEliminar" class="btn-cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== VERIFICAR SESIÓN =====
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) {
+            window.location.href = 'index.html';
+        }
+
+        // ===== MENÚ HAMBURGUESA =====
+        function toggleMenu() {
+            document.querySelector('.hamburger-menu').classList.toggle('active');
+            document.getElementById('sidebarMenu').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        function closeSidebar() {
+            document.querySelector('.hamburger-menu').classList.remove('active');
+            document.getElementById('sidebarMenu').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        // ===== CARGAR DATOS DEL USUARIO =====
+        function cargarDatosUsuario() {
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            const user = users.find(u => u.usuario === usuarioActivo);
+            if (user) {
+                document.getElementById('nombre').value = user.nombre || '';
+                document.getElementById('usuario').value = user.usuario || '';
+                document.getElementById('telefono').value = user.telefono || '';
+            } else {
+                mostrarAlerta('No se encontraron datos del usuario. Redirigiendo...', 'error');
+                setTimeout(() => { window.location.href = 'index.html'; }, 2000);
+            }
+        }
+
+        // ===== MOSTRAR ALERTA =====
+        function mostrarAlerta(mensaje, tipo) {
+            const alertDiv = document.getElementById('alertContainer');
+            alertDiv.textContent = mensaje;
+            alertDiv.className = `alert alert-${tipo} show`;
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+            }, 4000);
+        }
+
+        // ===== GUARDAR CAMBIOS =====
+        document.getElementById('configForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const telefono = document.getElementById('telefono').value.trim();
+            const nuevaPassword = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (nombre.length < 3) {
+                mostrarAlerta('El nombre debe tener al menos 3 caracteres', 'error');
+                return;
+            }
+            if (!telefono) {
+                mostrarAlerta('El teléfono es obligatorio', 'error');
+                return;
+            }
+            if (nuevaPassword && nuevaPassword.length < 6) {
+                mostrarAlerta('La nueva contraseña debe tener al menos 6 caracteres', 'error');
+                return;
+            }
+            if (nuevaPassword !== confirmPassword) {
+                mostrarAlerta('Las contraseñas no coinciden', 'error');
+                return;
+            }
+
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            const index = users.findIndex(u => u.usuario === usuarioActivo);
+            if (index === -1) {
+                mostrarAlerta('Error: usuario no encontrado', 'error');
+                return;
+            }
+
+            users[index].nombre = nombre;
+            users[index].telefono = telefono;
+            if (nuevaPassword) {
+                users[index].password = nuevaPassword;
+            }
+
+            localStorage.setItem('users', JSON.stringify(users));
+
+            localStorage.setItem('usuarioNombre', nombre);
+            localStorage.setItem('usuarioTelefono', telefono);
+
+            mostrarAlerta('✅ Datos actualizados correctamente', 'success');
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        });
+
+        // ===== ELIMINAR CUENTA =====
+        const btnEliminar = document.getElementById('btnEliminarCuenta');
+        const modalEliminar = document.getElementById('modalEliminarCuenta');
+        const confirmarBtn = document.getElementById('confirmarEliminar');
+        const cancelarBtn = document.getElementById('cancelarEliminar');
+
+        btnEliminar.addEventListener('click', () => {
+            modalEliminar.style.display = 'flex';
+        });
+
+        cancelarBtn.addEventListener('click', () => {
+            modalEliminar.style.display = 'none';
+        });
+
+        confirmarBtn.addEventListener('click', () => {
+            // Eliminar todos los datos del usuario de localStorage
+            const keysToRemove = [
+                `eventos_${usuarioActivo}`,
+                `habitos_${usuarioActivo}`,
+                `historial_${usuarioActivo}`,
+                `racha_${usuarioActivo}`,
+                `ultimoDiaRegistrado_${usuarioActivo}`,
+                `notificacionesDecidido_${usuarioActivo}`
+            ];
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+
+            // Eliminar al usuario de la lista de usuarios
+            let users = JSON.parse(localStorage.getItem('users')) || [];
+            users = users.filter(u => u.usuario !== usuarioActivo);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            // Cerrar sesión
+            localStorage.removeItem('usuarioActivo');
+            localStorage.removeItem('usuarioNombre');
+            localStorage.removeItem('usuarioTelefono');
+            localStorage.removeItem('sesionActiva');
+
+            modalEliminar.style.display = 'none';
+            mostrarAlerta('Cuenta eliminada correctamente. Serás redirigido.', 'success');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        });
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDatosUsuario();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Iniciar Sesión</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 35px 30px;
+            transition: all 0.3s ease;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 13px; line-height: 1.4; }
+        .form-group { margin-bottom: 22px; position: relative; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        input:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.1); }
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 42px;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            user-select: none;
+            transition: color 0.2s;
+        }
+        .toggle-password:hover { color: #d4af37; }
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #d4af37;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #c9a227; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+        .register-link {
+            text-align: center;
+            margin-top: 25px;
+        }
+        .register-link a {
+            color: #d4af37;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .register-link a:hover { text-decoration: underline; color: #b8960c; }
+        .modal-oculto {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .contenido-modal {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+            animation: fadeInUp 0.3s ease;
+        }
+        .icono-alerta { font-size: 48px; margin-bottom: 15px; }
+        .contenido-modal h3 { color: #d4af37; margin-bottom: 15px; }
+        .contenido-modal p { color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .btn-confirmar {
+            background-color: #d4af37;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+            margin-top: 0;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 480px) {
+            .container { padding: 25px 20px; }
+            .header { flex-direction: column; text-align: center; gap: 15px; }
+            .logo-container { width: 70px; height: 70px; }
+            .header-content h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container"><img src="logo.png" alt="Smart Agenda Logo" class="logo"></div>
+            <div class="header-content"><h1>Smart Agenda</h1><p>Inicia sesión en tu cuenta</p></div>
+        </div>
+
+        <form id="formLogin">
+            <div class="form-group">
+                <label>Usuario</label>
+                <input type="text" id="loginUsuario" placeholder="Tu usuario" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="loginPassword" placeholder="Tu contraseña">
+                <span class="toggle-password" onclick="togglePassword('loginPassword')">👁</span>
+            </div>
+            <button type="submit">Iniciar sesión</button>
+            <div class="register-link">
+                ¿No tienes cuenta? <a href="register.html">Regístrate aquí</a>
+            </div>
+        </form>
+    </div>
+
+    <div id="modalAlerta" class="modal-oculto">
+        <div class="contenido-modal">
+            <div class="icono-alerta" id="modalIcono">⚠️</div>
+            <h3 id="modalTitulo">Error</h3>
+            <p id="modalMensaje">Ha ocurrido un error.</p>
+            <button onclick="cerrarModal()" class="btn-confirmar">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            field.type = field.type === 'password' ? 'text' : 'password';
+        }
+        function mostrarModal(icono, titulo, mensaje) {
+            document.getElementById('modalIcono').textContent = icono;
+            document.getElementById('modalTitulo').textContent = titulo;
+            document.getElementById('modalMensaje').textContent = mensaje;
+            document.getElementById('modalAlerta').style.display = 'flex';
+        }
+        function cerrarModal() {
+            document.getElementById('modalAlerta').style.display = 'none';
+        }
+
+        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usuario = document.getElementById('loginUsuario').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!usuario || !password) {
+                mostrarModal('⚠️', 'Campos vacíos', 'Usuario y contraseña son obligatorios.');
+                return;
+            }
+
+            let useLocalStorage = false;
+            try {
+                const response = await fetch('http://localhost:4000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('usuarioActivo', usuario);
+                    localStorage.setItem('usuarioNombre', data.usuario.nombre);
+                    localStorage.setItem('usuarioTelefono', data.usuario.telefono);
+                    localStorage.setItem('sesionActiva', 'true');
+                    mostrarModal('✅', 'Bienvenido', data.message);
+                    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+                    return;
+                } else {
+                    mostrarModal('❌', 'Error de acceso', data.error);
+                    return;
+                }
+            } catch (error) {
+                useLocalStorage = true;
+            }
+
+            if (useLocalStorage) {
+                let users = JSON.parse(localStorage.getItem('users')) || [];
+                const user = users.find(u => u.usuario === usuario && u.password === password);
+                if (!user) {
+                    mostrarModal('❌', 'Credenciales incorrectas', 'Usuario o contraseña inválidos.');
+                    return;
+                }
+                localStorage.setItem('usuarioActivo', usuario);
+                localStorage.setItem('usuarioNombre', user.nombre);
+                localStorage.setItem('usuarioTelefono', user.telefono);
+                localStorage.setItem('sesionActiva', 'true');
+                mostrarModal('✅', 'Bienvenido', `Hola ${user.nombre}, has iniciado sesión correctamente.`);
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+            }
+        });
+    </script>
+    <script>
+    if (localStorage.getItem('usuarioActivo')) {
+        window.location.href = 'dashboard.html';
+    }
+    </script>
+</body>
+</html>

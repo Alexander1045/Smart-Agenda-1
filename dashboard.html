@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Dashboard</title>
+    <style>
+        /* ===== ESTILOS (mismos que antes, solo ajusto para agrupación) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: flex-start; flex: 1; padding-top: 80px; }
+        .container {
+            background: white; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 1200px; margin: 0 20px 20px 20px; padding: 30px; transition: all 0.3s ease;
+        }
+        .header { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .logo-container { width: 80px; height: 80px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #f5f5f5; }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 14px; }
+        .saludo-personalizado {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #d4af37;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .saludo-personalizado h2 {
+            color: #333;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+        .saludo-personalizado h2 span {
+            color: #d4af37;
+        }
+        .saludo-personalizado p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .racha-container { display: flex; flex-direction: column; align-items: flex-end; }
+        .racha-tareas { padding: 8px 20px; border-radius: 50px; font-weight: 700; font-size: 1rem; color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: 0.3s; cursor: pointer; }
+        .mensaje-motivacion { font-size: 11px; color: #d4af37; margin-top: 5px; text-align: center; }
+        .cuadros-flotantes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .cuadro { background: #f9f9f9; border-radius: 16px; padding: 20px; text-align: center; border-left: 4px solid #d4af37; transition: 0.3s; cursor: pointer; }
+        .cuadro:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(212,175,55,0.2); }
+        .cuadro h3 { color: #666; font-size: 14px; margin-bottom: 10px; }
+        .cuadro .numero { font-size: 32px; font-weight: 700; color: #d4af37; }
+        .division-paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        .panel { background: #f9f9f9; border-radius: 16px; padding: 20px; border-left: 4px solid #d4af37; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .panel h2 { color: #333; font-size: 18px; font-weight: 600; }
+        .btn-agregar { background-color: #d4af37; color: #333; padding: 8px 16px; border-radius: 30px; text-decoration: none; font-weight: 600; font-size: 13px; transition: 0.2s; display: inline-block; }
+        .btn-agregar:hover { background-color: #c9a227; transform: translateY(-2px); }
+        .lista-simple { list-style: none; max-height: 500px; overflow-y: auto; }
+        .grupo-fecha { margin-bottom: 15px; }
+        .grupo-titulo { font-weight: bold; color: #d4af37; margin-bottom: 8px; font-size: 0.9rem; border-left: 3px solid #d4af37; padding-left: 10px; }
+        .lista-simple li { background: white; margin-bottom: 10px; padding: 12px; border-radius: 12px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .lista-simple li:hover { transform: translateX(5px); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .evento-info { flex: 1; }
+        .evento-titulo { font-weight: 600; color: #333; font-size: 14px; }
+        .evento-detalles { font-size: 12px; color: #666; margin-top: 4px; }
+        .evento-tipo { display: inline-block; background-color: #d4af37; color: #333; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-right: 8px; }
+        .estado { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; margin-left: 8px; }
+        .estado-pendiente { background-color: #6c757d; color: white; }
+        .estado-progreso { background-color: #0d6efd; color: white; }
+        .estado-completado { background-color: #198754; color: white; }
+        .estado-fuera-tiempo { background-color: #dc3545; color: white; }
+        .evento-acciones button { background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 8px; transition: 0.2s; }
+        .evento-acciones button:hover { transform: scale(1.1); }
+        .btn-completar { color: #10b981; }
+        .btn-eliminar-evento { color: #dc3545; }
+        .habito-item { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .habito-item input[type="checkbox"] { width: 20px; height: 20px; accent-color: #d4af37; }
+        .habito-item span { color: #333; font-size: 14px; }
+        .btn-eliminar { background: none; border: none; color: #dc3545; font-size: 20px; cursor: pointer; padding: 0 8px; }
+        .empty-message { text-align: center; color: #999; padding: 20px !important; justify-content: center !important; }
+        footer { background: #f9f9f9; border-radius: 16px; padding: 20px; text-align: center; margin-top: 20px; }
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+        }
+        .modal-custom .modal-contenido button {
+            margin-top: 15px;
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        .modal-botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .modal-botones button { margin: 0; padding: 8px 20px; }
+        .btn-cancelar { background-color: #6c757d !important; color: white; }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(212,175,55,0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(212,175,55,0); }
+            100% { box-shadow: 0 0 0 0 rgba(212,175,55,0); }
+        }
+        .racha-celebra { animation: pulse-glow 0.6s ease-out; }
+        @media (max-width: 768px) {
+            .content { padding-top: 70px; }
+            .container { padding: 20px; margin: 0 15px 20px 15px; }
+            .header { flex-direction: column; text-align: center; }
+            .logo-container { width: 60px; height: 60px; }
+            .header-content h1 { font-size: 22px; }
+            .racha-container { align-items: center; width: 100%; }
+            .cuadros-flotantes { grid-template-columns: 1fr; }
+            .division-paneles { grid-template-columns: 1fr; }
+            .hamburger-menu { top: 12px; left: 12px; padding: 10px; }
+            .hamburger-menu span { width: 24px; height: 2.5px; }
+            .saludo-personalizado h2 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" class="active" onclick="closeSidebar()">📊 Dashboard</a>
+        <a href="agregar_evento.html" onclick="closeSidebar()">📋 Crear Evento</a>
+        <a href="editar_evento.html" onclick="closeSidebar()">✏️ Editar Evento</a>
+        <a href="habitos.html" onclick="closeSidebar()">⭐ Agregar Hábitos</a>
+        <a href="juegos.html" onclick="closeSidebar()">🎮 MiniJuegos</a>
+        <a href="chat.html" onclick="closeSidebar()">🤖 Asistente IA</a>
+        <a href="historial.html" onclick="closeSidebar()">📜 Historial</a>
+        <a href="configuracion.html" onclick="closeSidebar()">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container"><img src="logo.png" alt="Logo" class="logo"></div>
+                <div class="header-content">
+                    <h1>Smart Agenda</h1>
+                    <p>Organiza tus hábitos y eventos</p>
+                </div>
+                <div class="racha-container">
+                    <div class="racha-tareas" id="rachaBox"><span id="texto-racha">🔥 Racha: 0 días</span></div>
+                    <div class="mensaje-motivacion" id="mensajeMotivacion">¡Comienza tu racha hoy!</div>
+                </div>
+            </div>
+
+            <!-- SALUDO PERSONALIZADO MEJORADO -->
+            <div class="saludo-personalizado" id="saludoContainer">
+                <h2>¡Hola, <span id="nombreUsuario">Usuario</span>! 👋</h2>
+                <p id="fraseMotivacional">Cargando tu resumen...</p>
+            </div>
+
+            <section class="cuadros-flotantes">
+                <article class="cuadro"><h3>Total Hábitos</h3><p class="numero" id="total-habitos">0</p></article>
+                <article class="cuadro"><h3>Hábitos Pendientes</h3><p class="numero" id="pendientes-habitos">0</p></article>
+                <article class="cuadro"><h3>Hábitos Completados</h3><p class="numero" id="completados-habitos">0</p></article>
+            </section>
+
+            <section class="division-paneles">
+                <article class="panel">
+                    <div class="panel-header"><h2>📋 Eventos Pendientes</h2><a href="agregar_evento.html" class="btn-agregar">+ Nuevo Evento</a></div>
+                    <ul class="lista-simple" id="lista-eventos"><li class="empty-message">✨ No hay eventos pendientes</li></ul>
+                </article>
+                <article class="panel">
+                    <div class="panel-header"><h2>⭐ Mis Hábitos</h2><a href="habitos.html" class="btn-agregar">+ Nuevo Hábito</a></div>
+                    <ul class="lista-simple" id="lista-habitos"><li class="empty-message">✨ No hay hábitos aún. ¡Crea uno!</li></ul>
+                </article>
+            </section>
+            <footer><p>© 2024 Smart Agenda - Tu organización inteligente</p></footer>
+        </div>
+    </div>
+
+    <div id="modalConfirmacion" class="modal-custom">
+        <div class="modal-contenido"><h3>⚠️ Confirmar</h3><p id="modalMensaje"></p>
+        <div class="modal-botones"><button id="modalBtnSi">Sí, eliminar</button><button id="modalBtnNo" class="btn-cancelar">Cancelar</button></div></div>
+    </div>
+    <div id="modalAlerta" class="modal-custom">
+        <div class="modal-contenido"><h3>⏰ Atención</h3><p id="alertaMensaje"></p><button id="alertaBtn">Entendido</button></div>
+    </div>
+
+    <!-- MODAL PARA ACTIVAR NOTIFICACIONES (solo una vez) -->
+    <div id="modalNotificaciones" class="modal-custom" style="display: none;">
+        <div class="modal-contenido" style="max-width: 400px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">🔔🎉</div>
+            <h3>¡Activemos las notificaciones!</h3>
+            <p style="margin: 15px 0; text-align: left;">
+                🔥 <strong>¿Por qué es importante?</strong><br>
+                • Recibirás recordatorios de tus eventos justo a tiempo.<br>
+                • No olvidarás tareas importantes ni reuniones.<br>
+                • Mejorarás tu productividad y racha de hábitos.<br><br>
+                📢 <strong>¿Qué necesitas hacer?</strong><br>
+                Solo dale clic en "Aceptar" y luego permite las notificaciones en la ventana que aparecerá.<br>
+                Es rápido, seguro y totalmente gratis.
+            </p>
+            <div class="modal-botones">
+                <button id="btnAceptarNotificaciones" style="background-color: #d4af37; color: #333;">✅ Aceptar y activar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== VERIFICAR SESIÓN =====
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) {
+            window.location.href = 'index.html';
+        }
+
+        // ===== OBTENER NOMBRE DEL USUARIO =====
+        const usuarioNombre = localStorage.getItem('usuarioNombre') || usuarioActivo;
+
+        // ===== FUNCIONES DE LOCALSTORAGE POR USUARIO =====
+        function obtenerEventos() { return JSON.parse(localStorage.getItem(`eventos_${usuarioActivo}`)) || []; }
+        function guardarEventos(eventos) { localStorage.setItem(`eventos_${usuarioActivo}`, JSON.stringify(eventos)); }
+        function obtenerHabitos() { return JSON.parse(localStorage.getItem(`habitos_${usuarioActivo}`)) || []; }
+        function guardarHabitos(habitos) { localStorage.setItem(`habitos_${usuarioActivo}`, JSON.stringify(habitos)); }
+        function obtenerHistorial() { return JSON.parse(localStorage.getItem(`historial_${usuarioActivo}`)) || []; }
+        function guardarHistorial(historial) { localStorage.setItem(`historial_${usuarioActivo}`, JSON.stringify(historial)); }
+        function obtenerRachaData() { return JSON.parse(localStorage.getItem(`racha_${usuarioActivo}`)) || { valor: 0, ultimaFecha: null }; }
+        function guardarRachaData(rachaData) { localStorage.setItem(`racha_${usuarioActivo}`, JSON.stringify(rachaData)); }
+
+        // ===== FECHA LOCAL =====
+        function fechaLocal() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // ===== OBTENER SALUDO Y FRASE MEJORADO =====
+        function actualizarSaludo() {
+            const nombreSpan = document.getElementById('nombreUsuario');
+            if (nombreSpan) nombreSpan.textContent = usuarioNombre;
+            
+            const ahora = new Date();
+            const horas = ahora.getHours();
+            let saludoHora = "";
+            if (horas < 12) saludoHora = "Buenos días";
+            else if (horas < 19) saludoHora = "Buenas tardes";
+            else saludoHora = "Buenas noches";
+            
+            const eventos = obtenerEventos();
+            // Eventos pendientes totales (no completados y no expirados)
+            const pendientesTotales = eventos.filter(e => !e.completado && e.estadoActual !== 'fueraTiempo');
+            const totalPendientes = pendientesTotales.length;
+            // Eventos pendientes para hoy
+            const pendientesHoy = pendientesTotales.filter(e => e.fecha === fechaLocal());
+            const totalHoy = pendientesHoy.length;
+            
+            let frase = "";
+            if (totalPendientes === 0) {
+                frase = "🎉 ¡No tienes eventos pendientes! Disfruta tu día.";
+            } else {
+                if (totalHoy === 0) {
+                    frase = `📋 Tienes ${totalPendientes} evento${totalPendientes !== 1 ? 's' : ''} pendiente${totalPendientes !== 1 ? 's' : ''} en los próximos días. ¡Prepárate!`;
+                } else {
+                    frase = `📋 Tienes ${totalHoy} evento${totalHoy !== 1 ? 's' : ''} pendiente${totalHoy !== 1 ? 's' : ''} para hoy`;
+                    if (totalPendientes > totalHoy) {
+                        frase += ` y ${totalPendientes - totalHoy} más en otros días. ¡Organízate!`;
+                    } else {
+                        frase += `. ¡Puedes con ellos!`;
+                    }
+                }
+            }
+            
+            const fraseCompleta = `${saludoHora}, ${usuarioNombre}. ${frase}`;
+            const pFrase = document.getElementById('fraseMotivacional');
+            if (pFrase) pFrase.textContent = fraseCompleta;
+        }
+
+        // ===== MENÚ =====
+        function toggleMenu() { document.querySelector('.hamburger-menu').classList.toggle('active'); document.getElementById('sidebarMenu').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+        function closeSidebar() { document.querySelector('.hamburger-menu').classList.remove('active'); document.getElementById('sidebarMenu').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+
+        function mostrarModalConfirmacion(mensaje, onConfirm) {
+            const modal = document.getElementById('modalConfirmacion');
+            document.getElementById('modalMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btnSi = document.getElementById('modalBtnSi');
+            const btnNo = document.getElementById('modalBtnNo');
+            const handlerSi = () => { modal.style.display = 'none'; btnSi.removeEventListener('click', handlerSi); btnNo.removeEventListener('click', handlerNo); onConfirm(); };
+            const handlerNo = () => { modal.style.display = 'none'; btnSi.removeEventListener('click', handlerSi); btnNo.removeEventListener('click', handlerNo); };
+            btnSi.addEventListener('click', handlerSi);
+            btnNo.addEventListener('click', handlerNo);
+        }
+        function mostrarModalAlerta(mensaje) {
+            const modal = document.getElementById('modalAlerta');
+            document.getElementById('alertaMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('alertaBtn');
+            const handler = () => { modal.style.display = 'none'; btn.removeEventListener('click', handler); };
+            btn.addEventListener('click', handler);
+        }
+
+        // ===== REGISTRO DE HISTORIAL =====
+        function registrarHistorial(accion, nombre, tipo, fecha, hora, estado) {
+            let historial = obtenerHistorial();
+            const fechaStr = fechaLocal();
+            const horaStr = new Date().toLocaleTimeString('es-CO');
+            historial.unshift({ id: Date.now(), accion, nombre, tipo, fecha: fecha || fechaStr, hora: hora || horaStr, estado: estado || '' });
+            if (historial.length > 500) historial.pop();
+            guardarHistorial(historial);
+        }
+
+        // ===== ACTUALIZAR ESTADOS AUTOMÁTICAMENTE =====
+        function actualizarEstadosAutomaticos() {
+            const ahora = new Date();
+            let eventos = obtenerEventos();
+            let cambios = false;
+            eventos = eventos.map(ev => {
+                if (ev.completado) return ev;
+                const fechaEvento = ev.fecha;
+                const inicio = ev.inicio || ev.hora;
+                const fin = ev.fin || inicio;
+                if (!fechaEvento || !inicio) return ev;
+                const fechaHoraInicio = new Date(`${fechaEvento}T${inicio}`);
+                let plazoMaximo;
+                let tipoPlazo = (ev.tipo === 'cena' || ev.tipo === 'reunion') ? 'dia' : 'tarea';
+                if (tipoPlazo === 'dia') {
+                    plazoMaximo = new Date(`${fechaEvento}T23:59:59`);
+                } else {
+                    const fechaHoraFin = new Date(`${fechaEvento}T${fin}`);
+                    plazoMaximo = new Date(fechaHoraFin.getTime() + 30 * 60000);
+                }
+                let nuevoEstado = ev.estadoActual || 'pendiente';
+                let accion = null;
+                if (ahora < fechaHoraInicio) {
+                    nuevoEstado = 'pendiente';
+                } else if (ahora >= fechaHoraInicio && ahora <= plazoMaximo) {
+                    if (nuevoEstado !== 'enProgreso') {
+                        nuevoEstado = 'enProgreso';
+                        accion = 'En progreso';
+                    }
+                } else if (ahora > plazoMaximo) {
+                    if (nuevoEstado !== 'fueraTiempo') {
+                        nuevoEstado = 'fueraTiempo';
+                        accion = (tipoPlazo === 'dia') ? 'No asistió (finalizó el día)' : 'No completado en tiempo estimado';
+                    }
+                }
+                if (accion && nuevoEstado !== ev.estadoActual) {
+                    cambios = true;
+                    registrarHistorial(accion, ev.titulo, 'evento', fechaEvento, inicio, nuevoEstado);
+                    ev.estadoRegistrado = nuevoEstado;
+                }
+                ev.estadoActual = nuevoEstado;
+                return ev;
+            });
+            if (cambios) guardarEventos(eventos);
+            renderizarEventos();
+            renderizarHabitos();
+            actualizarSaludo();
+        }
+
+        // Función para formatear fecha legible
+        function formatearFechaLegible(fechaISO) {
+            if (!fechaISO) return 'Sin fecha';
+            const partes = fechaISO.split('-');
+            if (partes.length !== 3) return fechaISO;
+            const año = partes[0];
+            const mes = partes[1];
+            const dia = partes[2];
+            const fecha = new Date(año, mes-1, dia);
+            const hoy = new Date();
+            hoy.setHours(0,0,0,0);
+            const manana = new Date(hoy);
+            manana.setDate(hoy.getDate() + 1);
+            const pasado = new Date(hoy);
+            pasado.setDate(hoy.getDate() + 2);
+            if (fecha.getTime() === hoy.getTime()) return 'Hoy';
+            if (fecha.getTime() === manana.getTime()) return 'Mañana';
+            if (fecha.getTime() === pasado.getTime()) return 'Pasado mañana';
+            return `${dia}/${mes}/${año}`;
+        }
+
+        function renderizarEventos() {
+            const lista = document.getElementById('lista-eventos');
+            let eventos = obtenerEventos();
+            // Filtrar eventos pendientes (no completados y no expirados)
+            const pendientes = eventos.filter(e => !e.completado && e.estadoActual !== 'fueraTiempo');
+            
+            if (pendientes.length === 0) {
+                lista.innerHTML = '<li class="empty-message">✨ No hay eventos pendientes</li>';
+                return;
+            }
+            
+            // Ordenar por fecha (más cercana primero)
+            pendientes.sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+            
+            // Agrupar por fecha
+            const grupos = {};
+            pendientes.forEach(ev => {
+                const fechaKey = ev.fecha || 'sin fecha';
+                if (!grupos[fechaKey]) grupos[fechaKey] = [];
+                grupos[fechaKey].push(ev);
+            });
+            
+            lista.innerHTML = '';
+            // Mostrar grupos ordenados
+            const fechasOrdenadas = Object.keys(grupos).sort();
+            for (const fechaKey of fechasOrdenadas) {
+                const eventosGrupo = grupos[fechaKey];
+                const tituloGrupo = formatearFechaLegible(fechaKey);
+                const grupoDiv = document.createElement('div');
+                grupoDiv.className = 'grupo-fecha';
+                grupoDiv.innerHTML = `<div class="grupo-titulo">📅 ${tituloGrupo}</div>`;
+                const ul = document.createElement('ul');
+                ul.className = 'lista-simple';
+                ul.style.listStyle = 'none';
+                ul.style.padding = '0';
+                
+                eventosGrupo.forEach(ev => {
+                    const li = document.createElement('li');
+                    const emoji = { tarea:'📋', proyecto:'📁', cena:'🍽️', reunion:'👥' }[ev.tipo] || '📅';
+                    const fecha = ev.fecha || 'Sin fecha';
+                    const horaInicio = ev.inicio || ev.hora || '';
+                    let estadoClass = '', estadoTexto = '';
+                    switch (ev.estadoActual) {
+                        case 'pendiente': estadoClass = 'estado-pendiente'; estadoTexto = 'Pendiente'; break;
+                        case 'enProgreso': estadoClass = 'estado-progreso'; estadoTexto = 'En progreso'; break;
+                        case 'completado': estadoClass = 'estado-completado'; estadoTexto = 'Completado'; break;
+                        case 'fueraTiempo': estadoClass = 'estado-fuera-tiempo'; estadoTexto = (ev.tipo === 'cena' || ev.tipo === 'reunion') ? 'No asistió' : 'No completado a tiempo'; break;
+                        default: estadoClass = 'estado-pendiente'; estadoTexto = 'Pendiente';
+                    }
+                    let puedeCompletar = false;
+                    if (!ev.completado && ev.estadoActual !== 'fueraTiempo') {
+                        const ahora = new Date();
+                        const fechaEvento = ev.fecha;
+                        const inicio = ev.inicio || ev.hora;
+                        const fin = ev.fin || inicio;
+                        const fechaHoraInicio = new Date(`${fechaEvento}T${inicio}`);
+                        let plazoMaximo;
+                        if (ev.tipo === 'cena' || ev.tipo === 'reunion') {
+                            plazoMaximo = new Date(`${fechaEvento}T23:59:59`);
+                        } else {
+                            const fechaHoraFin = new Date(`${fechaEvento}T${fin}`);
+                            plazoMaximo = new Date(fechaHoraFin.getTime() + 30 * 60000);
+                        }
+                        puedeCompletar = (ahora >= fechaHoraInicio && ahora <= plazoMaximo);
+                    }
+                    li.innerHTML = `
+                        <div class="evento-info">
+                            <div class="evento-titulo">${emoji} ${ev.titulo} <span class="estado ${estadoClass}">${estadoTexto}</span></div>
+                            <div class="evento-detalles"><span class="evento-tipo">${ev.tipo}</span> 📅 ${fecha} ${horaInicio ? `⏰ ${horaInicio}` : ''}</div>
+                        </div>
+                        <div class="evento-acciones">
+                            ${puedeCompletar ? `<button class="btn-completar" data-id="${ev.id}" title="Marcar como completado">✅</button>` : ''}
+                            <button class="btn-eliminar-evento" data-id="${ev.id}" title="Eliminar">🗑️</button>
+                        </div>
+                    `;
+                    ul.appendChild(li);
+                });
+                grupoDiv.appendChild(ul);
+                lista.appendChild(grupoDiv);
+            }
+            
+            // Asignar eventos a los botones
+            document.querySelectorAll('.btn-completar').forEach(btn => btn.addEventListener('click', (e) => { completarEvento(parseInt(btn.dataset.id)); }));
+            document.querySelectorAll('.btn-eliminar-evento').forEach(btn => btn.addEventListener('click', (e) => { eliminarEvento(parseInt(btn.dataset.id)); }));
+        }
+
+        function completarEvento(id) {
+            let eventos = obtenerEventos();
+            const evento = eventos.find(e => e.id === id);
+            if (!evento || evento.completado) return;
+            const ahora = new Date();
+            const fechaEvento = evento.fecha;
+            const inicio = evento.inicio || evento.hora;
+            const fin = evento.fin || inicio;
+            const fechaHoraInicio = new Date(`${fechaEvento}T${inicio}`);
+            if (ahora < fechaHoraInicio) {
+                mostrarModalAlerta('⏳ No puedes completar este evento antes de su hora de inicio.');
+                return;
+            }
+            let plazoValido = false;
+            if (evento.tipo === 'cena' || evento.tipo === 'reunion') {
+                const finDia = new Date(`${fechaEvento}T23:59:59`);
+                plazoValido = ahora <= finDia;
+                if (!plazoValido) {
+                    mostrarModalAlerta('❌ No puedes completar este evento porque ya pasó el día del evento.');
+                    return;
+                }
+            } else {
+                const fechaHoraFin = new Date(`${fechaEvento}T${fin}`);
+                const plazoMaximo = new Date(fechaHoraFin.getTime() + 30 * 60000);
+                plazoValido = ahora <= plazoMaximo;
+                if (!plazoValido) {
+                    mostrarModalAlerta('❌ No puedes completar este evento porque ya pasó el plazo permitido (hora fin + 30 minutos).');
+                    return;
+                }
+            }
+            evento.completado = true;
+            evento.estadoActual = 'completado';
+            evento.estadoRegistrado = 'completado';
+            guardarEventos(eventos);
+            registrarHistorial('Completado', evento.titulo, 'evento', evento.fecha, evento.inicio || evento.hora, 'completado');
+            renderizarEventos();
+            actualizarEstadisticas();
+            actualizarSaludo();
+        }
+
+        function eliminarEvento(id) {
+            mostrarModalConfirmacion('¿Eliminar este evento permanentemente?', () => {
+                let eventos = obtenerEventos();
+                const evento = eventos.find(e => e.id === id);
+                if (evento) registrarHistorial('Eliminado', evento.titulo, 'evento', evento.fecha, evento.inicio || evento.hora, 'eliminado');
+                eventos = eventos.filter(e => e.id !== id);
+                guardarEventos(eventos);
+                renderizarEventos();
+                actualizarEstadisticas();
+                actualizarSaludo();
+            });
+        }
+
+        // ===== HÁBITOS Y RACHA (sin cambios relevantes) =====
+        function renderizarHabitos() {
+            const lista = document.getElementById('lista-habitos');
+            let habitos = obtenerHabitos();
+            if (habitos.length === 0) { lista.innerHTML = '<li class="empty-message">✨ No hay hábitos aún. ¡Crea uno!</li>'; actualizarEstadisticas(); return; }
+            lista.innerHTML = '';
+            habitos.forEach((h, idx) => {
+                const li = document.createElement('li');
+                let estadoClass = '', estadoTexto = '';
+                if (h.completado) { estadoClass = 'estado-completado'; estadoTexto = 'Completado'; }
+                else { estadoClass = 'estado-pendiente'; estadoTexto = 'Pendiente'; }
+                const estaCompletado = h.completado === true;
+                li.innerHTML = `
+                    <div class="habito-item">
+                        <input type="checkbox" ${estaCompletado ? 'checked disabled' : ''} data-index="${idx}">
+                        <span style="${estaCompletado ? 'text-decoration: line-through; color: #aaa;' : ''}">${h.nombre}<span class="estado ${estadoClass}" style="margin-left:8px;">${estadoTexto}</span></span>
+                    </div>
+                    <button class="btn-eliminar" data-index="${idx}">×</button>
+                `;
+                lista.appendChild(li);
+            });
+            document.querySelectorAll('#lista-habitos input[type="checkbox"]').forEach(cb => {
+                if (!cb.disabled) cb.addEventListener('change', (e) => { toggleHabito(parseInt(cb.dataset.index)); });
+            });
+            document.querySelectorAll('#lista-habitos .btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', (e) => { eliminarHabito(parseInt(btn.dataset.index)); });
+            });
+            actualizarEstadisticas();
+        }
+
+        function toggleHabito(index) {
+            let habitos = obtenerHabitos();
+            const habito = habitos[index];
+            if (!habito.completado) {
+                habito.completado = true;
+                guardarHabitos(habitos);
+                registrarHistorial('Completado', habito.nombre, 'habito', fechaLocal(), '', 'completado');
+                actualizarRacha();
+                renderizarHabitos();
+            }
+        }
+
+        function eliminarHabito(index) {
+            mostrarModalConfirmacion('¿Eliminar este hábito?', () => {
+                let habitos = obtenerHabitos();
+                const habito = habitos[index];
+                registrarHistorial('Eliminado', habito.nombre, 'habito', fechaLocal(), '', 'eliminado');
+                habitos.splice(index, 1);
+                guardarHabitos(habitos);
+                actualizarRacha();
+                renderizarHabitos();
+                actualizarEstadisticas();
+            });
+        }
+
+        function actualizarRacha() {
+            const habitos = obtenerHabitos();
+            const hoy = fechaLocal();
+            let rachaData = obtenerRachaData();
+            let rachaActual = rachaData.valor;
+            let ultimaFecha = rachaData.ultimaFecha;
+
+            if (habitos.length === 0) {
+                if (rachaActual !== 0) {
+                    rachaData.valor = 0;
+                    rachaData.ultimaFecha = null;
+                    guardarRachaData(rachaData);
+                }
+                actualizarEstadisticas();
+                return;
+            }
+
+            const todosCompletadosHoy = habitos.every(h => h.completado === true);
+            const ayerDate = new Date();
+            ayerDate.setDate(ayerDate.getDate() - 1);
+            const ayer = `${ayerDate.getFullYear()}-${String(ayerDate.getMonth()+1).padStart(2,'0')}-${String(ayerDate.getDate()).padStart(2,'0')}`;
+
+            if (!todosCompletadosHoy) {
+                if (ultimaFecha === ayer || ultimaFecha === hoy) {
+                    if (rachaActual > 0) {
+                        registrarHistorial('Racha perdida', `Se perdió la racha de ${rachaActual} días`, 'sistema', hoy, '', 'racha');
+                        rachaData.valor = 0;
+                        rachaData.ultimaFecha = null;
+                        guardarRachaData(rachaData);
+                    }
+                }
+                actualizarEstadisticas();
+                return;
+            }
+
+            if (ultimaFecha === hoy) {
+                actualizarEstadisticas();
+                return;
+            }
+
+            let nuevaRacha;
+            if (ultimaFecha === ayer) {
+                nuevaRacha = rachaActual + 1;
+                registrarHistorial('Racha aumentada', `+1 día (total ${nuevaRacha})`, 'sistema', hoy, '', 'racha');
+            } else {
+                nuevaRacha = 1;
+                if (rachaActual > 0) {
+                    registrarHistorial('Racha reiniciada', `Se perdió la racha de ${rachaActual} días`, 'sistema', hoy, '', 'racha');
+                } else {
+                    registrarHistorial('Racha iniciada', 'Primer día de racha', 'sistema', hoy, '', 'racha');
+                }
+            }
+
+            rachaData.valor = nuevaRacha;
+            rachaData.ultimaFecha = hoy;
+            guardarRachaData(rachaData);
+            document.getElementById('rachaBox').classList.add('racha-celebra');
+            setTimeout(() => document.getElementById('rachaBox').classList.remove('racha-celebra'), 600);
+            actualizarEstadisticas();
+        }
+
+        function verificarReinicioDiario() {
+            const hoy = fechaLocal();
+            const ultimoDiaRegistrado = localStorage.getItem(`ultimoDiaRegistrado_${usuarioActivo}`);
+            if (ultimoDiaRegistrado !== hoy) {
+                let habitos = obtenerHabitos();
+                let huboCambio = false;
+                habitos.forEach(h => { if (h.completado) huboCambio = true; h.completado = false; });
+                if (huboCambio) {
+                    guardarHabitos(habitos);
+                }
+                localStorage.setItem(`ultimoDiaRegistrado_${usuarioActivo}`, hoy);
+                actualizarRacha();
+                renderizarHabitos();
+            } else {
+                actualizarRacha();
+            }
+        }
+
+        function actualizarEstadisticas() {
+            const habitos = obtenerHabitos();
+            const total = habitos.length;
+            const completados = habitos.filter(h => h.completado).length;
+            const pendientes = total - completados;
+            document.getElementById('total-habitos').innerText = total;
+            document.getElementById('pendientes-habitos').innerText = pendientes;
+            document.getElementById('completados-habitos').innerText = completados;
+            const rachaData = obtenerRachaData();
+            const racha = rachaData.valor;
+            document.getElementById('texto-racha').innerHTML = `🔥 Racha: ${racha} días`;
+            let color, msg;
+            if (racha === 0) { color = 'linear-gradient(135deg, #6b7280, #4b5563)'; msg = '¡Completa todos los hábitos hoy!'; }
+            else if (racha < 3) { color = 'linear-gradient(135deg, #f59e0b, #ef4444)'; msg = '¡Buen inicio! Sigue así 🔥'; }
+            else if (racha < 7) { color = 'linear-gradient(135deg, #fbbf24, #f59e0b)'; msg = '¡Vas excelente! Mantén la racha ⚡'; }
+            else if (racha < 15) { color = 'linear-gradient(135deg, #10b981, #059669)'; msg = '¡Imparable! Eres una máquina 🚀'; }
+            else { color = 'linear-gradient(135deg, #d4af37, #b8960c)'; msg = '¡LEYENDA! Racha increíble 👑'; }
+            document.getElementById('rachaBox').style.background = color;
+            document.getElementById('mensajeMotivacion').innerText = msg;
+        }
+
+        // ===== NOTIFICACIONES =====
+        function verificarYMostrarModalNotificaciones() {
+            const yaPreguntado = localStorage.getItem(`notificacionesPreguntado_${usuarioActivo}`);
+            if (yaPreguntado === 'true') return;
+            const modal = document.getElementById('modalNotificaciones');
+            modal.style.display = 'flex';
+            const btn = document.getElementById('btnAceptarNotificaciones');
+            const handler = () => {
+                localStorage.setItem(`notificacionesPreguntado_${usuarioActivo}`, 'true');
+                if ('Notification' in window) {
+                    Notification.requestPermission().then(permiso => {
+                        if (permiso === 'granted') {
+                            mostrarModalAlerta('✅ ¡Notificaciones activadas! Ahora recibirás recordatorios.');
+                        } else {
+                            mostrarModalAlerta('⚠️ No activaste las notificaciones. Puedes hacerlo más tarde desde la configuración del navegador.');
+                        }
+                    });
+                } else {
+                    mostrarModalAlerta('❌ Tu navegador no soporta notificaciones.');
+                }
+                modal.style.display = 'none';
+                btn.removeEventListener('click', handler);
+            };
+            btn.addEventListener('click', handler);
+        }
+
+        function revisarRecordatorios() {
+            if (Notification.permission !== 'granted') return;
+            const eventos = obtenerEventos();
+            const ahora = new Date();
+            let cambios = false;
+            eventos.forEach(ev => {
+                if (ev.completado) return;
+                if (ev.notificado === undefined) ev.notificado = false;
+                const fechaEvento = ev.fecha;
+                const horaInicio = ev.inicio || ev.hora;
+                if (!fechaEvento || !horaInicio) return;
+                const fechaHora = new Date(`${fechaEvento}T${horaInicio}`);
+                const minutosDiferencia = (fechaHora - ahora) / 60000;
+                const anticipacion = parseInt(ev.anticipacion) || 30;
+                if (minutosDiferencia > 0 && minutosDiferencia <= anticipacion && minutosDiferencia > anticipacion - 2) {
+                    if (!ev.notificado) {
+                        new Notification(`⏰ Recordatorio: ${ev.titulo}`, {
+                            body: `Comienza en ${Math.round(minutosDiferencia)} minutos (${horaInicio})`,
+                            icon: 'logo.png'
+                        });
+                        ev.notificado = true;
+                        cambios = true;
+                    }
+                }
+            });
+            if (cambios) guardarEventos(eventos);
+        }
+
+        // ===== INICIALIZACIÓN =====
+        function init() {
+            actualizarSaludo();
+            verificarReinicioDiario();
+            actualizarEstadosAutomaticos();
+            setInterval(actualizarEstadosAutomaticos, 60000);
+            renderizarEventos();
+            renderizarHabitos();
+            if ('Notification' in window) {
+                verificarYMostrarModalNotificaciones();
+                setInterval(revisarRecordatorios, 60000);
+            }
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>

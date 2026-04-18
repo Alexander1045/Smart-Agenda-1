@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Historial de Actividad</title>
+    <style>
+        /* ===== ESTILOS MODERNOS (fondo azul oscuro unificado) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: flex-start; flex: 1; padding-top: 80px; }
+        .container {
+            background: white; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 1200px; margin: 0 20px 20px 20px; padding: 30px; transition: all 0.3s ease;
+        }
+        .header { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .logo-container { width: 80px; height: 80px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #f5f5f5; }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 14px; }
+        .filtros {
+            background: #f9f9f9; border-radius: 16px; padding: 20px; margin-bottom: 30px;
+            display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end;
+        }
+        .filtro-group { flex: 1; min-width: 150px; }
+        .filtro-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; font-size: 13px; }
+        .filtro-group select, .filtro-group input {
+            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 12px;
+            font-size: 14px; transition: 0.2s;
+        }
+        .filtro-group select:focus, .filtro-group input:focus { outline: none; border-color: #d4af37; }
+        .btn-filtrar { background-color: #d4af37; color: #333; border: none; padding: 10px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-filtrar:hover { background-color: #c9a227; transform: translateY(-2px); }
+        .btn-limpiar { background-color: #6c757d; color: white; }
+        .btn-limpiar:hover { background-color: #5a6268; }
+        .lista-historial { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .historial-item {
+            background: white; border-radius: 16px; padding: 16px; border-left: 4px solid #d4af37;
+            display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .historial-item:hover { transform: translateX(5px); box-shadow: 0 4px 12px rgba(212,175,55,0.2); }
+        .info { flex: 1; }
+        .nombre { font-weight: 700; color: #333; font-size: 16px; margin-bottom: 4px; }
+        .detalle { font-size: 13px; color: #666; }
+        .fecha-hora { font-size: 12px; color: #999; margin-top: 5px; }
+        .icono { font-size: 28px; margin-right: 15px; }
+        .btn-eliminar-linea { background: none; border: none; font-size: 22px; cursor: pointer; color: #dc3545; padding: 0 10px; transition: 0.2s; }
+        .btn-eliminar-linea:hover { transform: scale(1.2); }
+        .empty-message { text-align: center; padding: 40px; color: #999; font-size: 16px; }
+
+        /* MODALES PERSONALIZADOS */
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+        }
+        .modal-custom .modal-contenido button {
+            margin-top: 15px;
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        .modal-botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .modal-botones button { margin: 0; padding: 8px 20px; }
+        .btn-cancelar { background-color: #6c757d !important; color: white; }
+
+        @media (max-width: 768px) {
+            .content { padding-top: 70px; }
+            .container { padding: 20px; margin: 0 15px 20px 15px; }
+            .header { flex-direction: column; text-align: center; }
+            .logo-container { width: 60px; height: 60px; }
+            .header-content h1 { font-size: 22px; }
+            .hamburger-menu { top: 12px; left: 12px; padding: 10px; }
+            .hamburger-menu span { width: 24px; height: 2.5px; }
+            .filtros { flex-direction: column; }
+            .filtro-group { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" onclick="closeSidebar()">📊 Dashboard</a>
+        <a href="agregar_evento.html" onclick="closeSidebar()">📋 Crear Evento</a>
+        <a href="editar_evento.html" onclick="closeSidebar()">✏️ Editar Evento</a>
+        <a href="habitos.html" onclick="closeSidebar()">⭐ Agregar Hábitos</a>
+        <a href="juegos.html" onclick="closeSidebar()">🎮 MiniJuegos</a>
+        <a href="chat.html" onclick="closeSidebar()">🤖 Asistente IA</a>
+        <a href="historial.html" class="active" onclick="closeSidebar()">📜 Historial</a>
+        <a href="configuracion.html" onclick="closeSidebar()">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                const usuario = localStorage.getItem('usuarioActivo');
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container"><img src="logo.png" alt="Smart Agenda Logo" class="logo"></div>
+                <div class="header-content"><h1>Smart Agenda</h1><p>Historial completo de actividad</p></div>
+            </div>
+
+            <div class="filtros">
+                <div class="filtro-group">
+                    <label>Filtrar por</label>
+                    <select id="filtroTipo">
+                        <option value="dia">Día específico</option>
+                        <option value="mes">Mes</option>
+                        <option value="ano">Año</option>
+                        <option value="rango">Rango personalizado</option>
+                        <option value="todos">Todos (sin filtro)</option>
+                    </select>
+                </div>
+                <div class="filtro-group" id="grupoDia">
+                    <label>Fecha</label>
+                    <input type="date" id="fechaDia">
+                </div>
+                <div class="filtro-group" id="grupoMes" style="display:none;">
+                    <label>Mes</label>
+                    <input type="month" id="fechaMes">
+                </div>
+                <div class="filtro-group" id="grupoAno" style="display:none;">
+                    <label>Año</label>
+                    <input type="number" id="fechaAno" placeholder="Ej: 2024" step="1">
+                </div>
+                <div class="filtro-group" id="grupoRango" style="display:none;">
+                    <label>Desde</label>
+                    <input type="date" id="rangoInicio">
+                    <label style="margin-top:5px;">Hasta</label>
+                    <input type="date" id="rangoFin">
+                </div>
+                <button class="btn-filtrar" onclick="aplicarFiltro()">🔍 Filtrar</button>
+                <button class="btn-filtrar btn-limpiar" onclick="limpiarFiltros()">🗑️ Limpiar</button>
+            </div>
+
+            <div id="historialContainer">
+                <ul class="lista-historial" id="listaHistorial">
+                    <li class="empty-message">Cargando historial...</li>
+                </ul>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="mostrarModalLimpiarTodo()" class="btn-filtrar btn-limpiar" style="background-color:#dc3545; color:white;">🗑️ Limpiar todo el historial</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALES PERSONALIZADOS -->
+    <div id="modalConfirmacion" class="modal-custom">
+        <div class="modal-contenido">
+            <h3>⚠️ Confirmar</h3>
+            <p id="modalMensaje"></p>
+            <div class="modal-botones">
+                <button id="modalBtnSi">Sí, eliminar</button>
+                <button id="modalBtnNo" class="btn-cancelar">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    <div id="modalExito" class="modal-custom">
+        <div class="modal-contenido">
+            <h3>✅ Éxito</h3>
+            <p id="exitoMensaje"></p>
+            <button id="exitoBtn">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== VERIFICAR SESIÓN =====
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) {
+            window.location.href = 'index.html';
+        }
+
+        // ===== FUNCIONES DE LOCALSTORAGE =====
+        function obtenerHistorial() { return JSON.parse(localStorage.getItem(`historial_${usuarioActivo}`)) || []; }
+        function guardarHistorial(historial) { localStorage.setItem(`historial_${usuarioActivo}`, JSON.stringify(historial)); }
+
+        // ===== MENÚ =====
+        function toggleMenu() {
+            document.querySelector('.hamburger-menu').classList.toggle('active');
+            document.getElementById('sidebarMenu').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        function closeSidebar() {
+            document.querySelector('.hamburger-menu').classList.remove('active');
+            document.getElementById('sidebarMenu').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('usuarioActivo');
+            localStorage.removeItem('usuarioNombre');
+            localStorage.removeItem('usuarioTelefono');
+            localStorage.removeItem('sesionActiva');
+            window.location.href = 'index.html';
+        }
+
+        // ===== MODALES =====
+        function mostrarModalConfirmacion(mensaje, onConfirm) {
+            const modal = document.getElementById('modalConfirmacion');
+            document.getElementById('modalMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btnSi = document.getElementById('modalBtnSi');
+            const btnNo = document.getElementById('modalBtnNo');
+            const handlerSi = () => {
+                modal.style.display = 'none';
+                btnSi.removeEventListener('click', handlerSi);
+                btnNo.removeEventListener('click', handlerNo);
+                onConfirm();
+            };
+            const handlerNo = () => {
+                modal.style.display = 'none';
+                btnSi.removeEventListener('click', handlerSi);
+                btnNo.removeEventListener('click', handlerNo);
+            };
+            btnSi.addEventListener('click', handlerSi);
+            btnNo.addEventListener('click', handlerNo);
+        }
+
+        function mostrarModalExito(mensaje, recargar = false) {
+            const modal = document.getElementById('modalExito');
+            document.getElementById('exitoMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('exitoBtn');
+            const handler = () => {
+                modal.style.display = 'none';
+                btn.removeEventListener('click', handler);
+                if (recargar) aplicarFiltro();
+            };
+            btn.addEventListener('click', handler);
+        }
+
+        // ===== FILTROS Y RENDERIZADO =====
+        const filtroSelect = document.getElementById('filtroTipo');
+        const grupoDia = document.getElementById('grupoDia');
+        const grupoMes = document.getElementById('grupoMes');
+        const grupoAno = document.getElementById('grupoAno');
+        const grupoRango = document.getElementById('grupoRango');
+
+        filtroSelect.addEventListener('change', () => {
+            const val = filtroSelect.value;
+            grupoDia.style.display = val === 'dia' ? 'block' : 'none';
+            grupoMes.style.display = val === 'mes' ? 'block' : 'none';
+            grupoAno.style.display = val === 'ano' ? 'block' : 'none';
+            grupoRango.style.display = val === 'rango' ? 'block' : 'none';
+        });
+
+        let historialCompleto = [];
+
+        function renderizarHistorial(historialFiltrado) {
+            const contenedor = document.getElementById('listaHistorial');
+            if (!historialFiltrado || historialFiltrado.length === 0) {
+                contenedor.innerHTML = '<li class="empty-message">✨ No hay actividad registrada con esos filtros.</li>';
+                return;
+            }
+            contenedor.innerHTML = '';
+            historialFiltrado.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'historial-item';
+                let icono = '';
+                if (item.accion === 'Completado') icono = '✅';
+                else if (item.accion === 'Eliminado') icono = '🗑️';
+                else if (item.accion === 'Editado') icono = '✏️';
+                else if (item.accion === 'En progreso') icono = '⏳';
+                else if (item.accion === 'No hecho en tiempo estimado') icono = '⏰';
+                else if (item.accion === 'No asistió (finalizó el día)') icono = '🚫';
+                else if (item.accion.includes('Racha')) icono = '🔥';
+                else icono = '📌';
+                li.innerHTML = `
+                    <div class="icono">${icono}</div>
+                    <div class="info">
+                        <div class="nombre">${escapeHtml(item.nombre || 'Sin nombre')}</div>
+                        <div class="detalle">${escapeHtml(item.accion)}</div>
+                        <div class="fecha-hora">${item.fecha} ${item.hora ? `- ${item.hora}` : ''}</div>
+                    </div>
+                    <button class="btn-eliminar-linea" data-id="${item.id}" title="Eliminar este registro">×</button>
+                `;
+                contenedor.appendChild(li);
+            });
+            document.querySelectorAll('.btn-eliminar-linea').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(btn.dataset.id);
+                    eliminarUnaLinea(id);
+                });
+            });
+        }
+
+        // Función para evitar inyección HTML (por si el nombre contiene etiquetas)
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function aplicarFiltro() {
+            historialCompleto = obtenerHistorial();
+            const tipo = filtroSelect.value;
+            let filtrados = [...historialCompleto];
+
+            if (tipo === 'dia') {
+                const fecha = document.getElementById('fechaDia').value;
+                if (fecha) filtrados = filtrados.filter(item => item.fecha === fecha);
+            } else if (tipo === 'mes') {
+                const mes = document.getElementById('fechaMes').value;
+                if (mes) filtrados = filtrados.filter(item => item.fecha && item.fecha.startsWith(mes));
+            } else if (tipo === 'ano') {
+                const ano = document.getElementById('fechaAno').value;
+                if (ano) filtrados = filtrados.filter(item => item.fecha && item.fecha.startsWith(ano));
+            } else if (tipo === 'rango') {
+                const inicio = document.getElementById('rangoInicio').value;
+                const fin = document.getElementById('rangoFin').value;
+                if (inicio && fin) filtrados = filtrados.filter(item => item.fecha >= inicio && item.fecha <= fin);
+                else if (inicio) filtrados = filtrados.filter(item => item.fecha >= inicio);
+                else if (fin) filtrados = filtrados.filter(item => item.fecha <= fin);
+            }
+            filtrados.sort((a,b) => (b.fecha || '').localeCompare(a.fecha || ''));
+            renderizarHistorial(filtrados);
+        }
+
+        function limpiarFiltros() {
+            filtroSelect.value = 'todos';
+            grupoDia.style.display = 'none';
+            grupoMes.style.display = 'none';
+            grupoAno.style.display = 'none';
+            grupoRango.style.display = 'none';
+            document.getElementById('fechaDia').value = '';
+            document.getElementById('fechaMes').value = '';
+            document.getElementById('fechaAno').value = '';
+            document.getElementById('rangoInicio').value = '';
+            document.getElementById('rangoFin').value = '';
+            aplicarFiltro();
+        }
+
+        function eliminarUnaLinea(id) {
+            mostrarModalConfirmacion('¿Eliminar este registro del historial?', () => {
+                let historial = obtenerHistorial();
+                historial = historial.filter(item => item.id !== id);
+                guardarHistorial(historial);
+                mostrarModalExito('Registro eliminado correctamente', true);
+            });
+        }
+
+        function mostrarModalLimpiarTodo() {
+            mostrarModalConfirmacion('⚠️ ¿Estás seguro de que deseas ELIMINAR TODO el historial? Esta acción no se puede deshacer.', () => {
+                guardarHistorial([]);
+                mostrarModalExito('Historial eliminado por completo', true);
+            });
+        }
+
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', () => {
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaDia').value = hoy;
+            aplicarFiltro();
+        });
+    </script>
+</body>
+</html>

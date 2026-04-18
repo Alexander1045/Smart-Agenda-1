@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Editar Evento</title>
+    <style>
+        /* ===== ESTILOS (mismo fondo azul oscuro que el resto) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: flex-start; flex: 1; padding-top: 80px; }
+        .container {
+            background: white; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 600px; margin: 0 20px 20px 20px; padding: 40px; transition: all 0.3s ease;
+        }
+        .header { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .logo-container { width: 80px; height: 80px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #f5f5f5; }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        select, input, textarea {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px;
+            font-size: 14px; transition: all 0.2s; font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.1); }
+        .section {
+            display: none; background: #f9f9f9; border-radius: 16px; padding: 20px;
+            margin-bottom: 20px; border-left: 4px solid #d4af37; animation: slideIn 0.3s ease;
+        }
+        .section.active { display: block; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .section-title { font-size: 16px; font-weight: 600; color: #d4af37; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .anticipation-info { background-color: #fffbf0; border-left: 3px solid #d4af37; padding: 10px; margin-top: 10px; font-size: 12px; color: #744210; border-radius: 8px; }
+        .subtasks-section { margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e0e0; }
+        .add-subtask-btn { background-color: #e8dcc0; color: #333; padding: 8px; font-size: 13px; width: auto; margin-top: 10px; }
+        .subtask-item { background-color: white; padding: 10px; margin-top: 10px; border-radius: 10px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .subtask-item button { background-color: #dc3545; color: white; padding: 4px 12px; font-size: 12px; width: auto; margin: 0; }
+        .selector-eventos { display: none; }
+        .selector-eventos.show { display: block; }
+        .sin-eventos { background-color: #fff3cd; border: 2px solid #ffc107; color: #856404; padding: 20px; border-radius: 16px; text-align: center; font-weight: 600; font-size: 16px; }
+        .button-container { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
+        button { flex: 1; padding: 12px; background-color: #d4af37; color: #333; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        button:hover { background-color: #c9a227; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .disabled-btn { opacity: 0.6; pointer-events: none; cursor: not-allowed; }
+        .mensaje-bloqueo { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 10px; border-radius: 12px; margin-bottom: 20px; text-align: center; }
+        
+        /* MODALES */
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+        }
+        .modal-custom .modal-contenido button {
+            margin-top: 15px;
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        .modal-botones {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .modal-botones button { margin: 0; padding: 8px 20px; }
+        .btn-cancelar { background-color: #6c757d !important; color: white; }
+        
+        @media (max-width: 768px) {
+            .content { padding-top: 70px; }
+            .container { padding: 20px; margin: 0 15px 20px 15px; }
+            .header { flex-direction: column; text-align: center; }
+            .logo-container { width: 60px; height: 60px; }
+            .header-content h1 { font-size: 22px; }
+            .hamburger-menu { top: 12px; left: 12px; padding: 10px; }
+            .hamburger-menu span { width: 24px; height: 2.5px; }
+            .button-container { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" onclick="closeSidebar()">📊 Dashboard</a>
+        <a href="agregar_evento.html" onclick="closeSidebar()">📋 Crear Evento</a>
+        <a href="editar_evento.html" class="active" onclick="closeSidebar()">✏️ Editar Evento</a>
+        <a href="habitos.html" onclick="closeSidebar()">⭐ Agregar Hábitos</a>
+        <a href="juegos.html" onclick="closeSidebar()">🎮 MiniJuegos</a>
+        <a href="chat.html" onclick="closeSidebar()">🤖 Asistente IA</a>
+        <a href="historial.html" onclick="closeSidebar()">📜 Historial</a>
+        <a href="configuracion.html" onclick="closeSidebar()">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                // También limpiar preferencias de notificaciones para ese usuario
+                localStorage.removeItem(`notificacionesActivadas_${usuarioActivo}`);
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container"><img src="logo.png" alt="Logo" class="logo"></div>
+                <div class="header-content"><h1>Smart Agenda</h1><p>Editar eventos</p></div>
+            </div>
+
+            <div id="sinEventosDiv" class="sin-eventos" style="display: none;">⚠️ No hay eventos guardados para editar</div>
+
+            <div id="selectorEventosDiv" class="selector-eventos">
+                <div class="form-group">
+                    <label for="eventoSeleccionar">Selecciona un evento para editar</label>
+                    <select id="eventoSeleccionar" onchange="cargarEventoSeleccionado()">
+                        <option value="">-- Elige un evento --</option>
+                    </select>
+                </div>
+            </div>
+
+            <form id="editarEventoForm" style="display: none;">
+                <!-- Mensaje de bloqueo si el evento ya expiró -->
+                <div id="bloqueoMensaje" class="mensaje-bloqueo" style="display: none;">
+                    ⚠️ Este evento ya ha expirado (pasó su fecha/hora de inicio). No se puede editar, solo eliminar.
+                </div>
+                <div class="form-group"><label>Título</label><input type="text" id="titulo" required></div>
+                <div class="form-group"><label>Descripción</label><textarea id="descripcion"></textarea></div>
+                <div class="form-group"><label>Tipo de Evento</label><input type="text" id="tipoEvento" disabled style="background:#f0f0f0;"></div>
+
+                <div id="seccionTarea" class="section">
+                    <div class="section-title">Detalles de la Tarea</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="tareaFecha"></div>
+                    <div class="form-group"><label>Hora inicio</label><input type="time" id="tareaInicio"></div>
+                    <div class="form-group"><label>Hora fin</label><input type="time" id="tareaFin"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="tareaAnticipacion"></select></div>
+                    <div class="anticipation-info">📨 Recibirás una notificación con anticipación</div>
+                </div>
+
+                <div id="seccionProyecto" class="section">
+                    <div class="section-title">Horarios del Proyecto</div>
+                    <div class="form-group"><label>Fecha inicio</label><input type="date" id="proyectoFecha"></div>
+                    <div class="form-group"><label>Hora inicio</label><input type="time" id="proyectoInicio"></div>
+                    <div class="form-group"><label>Hora fin</label><input type="time" id="proyectoFin"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="proyectoAnticipacion"></select></div>
+                    <div class="anticipation-info">📨 Recibirás una notificación con anticipación</div>
+                    <div class="subtasks-section"><label>Tareas del proyecto</label><div id="listaTareas"></div><button type="button" class="add-subtask-btn" onclick="agregarTareaProyecto()">+ Agregar tarea</button></div>
+                </div>
+
+                <div id="seccionCena" class="section">
+                    <div class="section-title">Detalles de la Cena</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="cenaFecha"></div>
+                    <div class="form-group"><label>Hora</label><input type="time" id="cenaHora"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="cenaAnticipacion"></select></div>
+                    <div class="anticipation-info">📨 Recibirás un recordatorio antes de la cena</div>
+                </div>
+
+                <div id="seccionReunion" class="section">
+                    <div class="section-title">Detalles de la Reunión</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="reunionFecha"></div>
+                    <div class="form-group"><label>Hora</label><input type="time" id="reunionHora"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="reunionAnticipacion"></select></div>
+                    <div class="anticipation-info">📨 Recibirás un recordatorio antes de la reunión</div>
+                </div>
+
+                <div class="button-container">
+                    <button type="submit" id="btnActualizar">✏️ Actualizar Evento</button>
+                    <button type="button" class="btn-danger" onclick="borrarEvento()">🗑️ Eliminar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODALES PERSONALIZADOS -->
+    <div id="modalAlerta" class="modal-custom">
+        <div class="modal-contenido"><h3>⏰ Atención</h3><p id="alertaMensaje"></p><button id="alertaBtn">Entendido</button></div>
+    </div>
+    <div id="modalConfirmacion" class="modal-custom">
+        <div class="modal-contenido"><h3>⚠️ Confirmar</h3><p id="modalMensaje"></p>
+        <div class="modal-botones"><button id="modalBtnSi">Sí, eliminar</button><button id="modalBtnNo" class="btn-cancelar">Cancelar</button></div></div>
+    </div>
+    <div id="modalExito" class="modal-custom">
+        <div class="modal-contenido"><h3>✅ Éxito</h3><p id="exitoMensaje"></p><button id="exitoBtn">Entendido</button></div>
+    </div>
+
+    <script>
+        // ===== VERIFICAR SESIÓN =====
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) {
+            window.location.href = 'index.html';
+        }
+
+        // ===== FUNCIONES DE LOCALSTORAGE POR USUARIO =====
+        function obtenerEventos() { return JSON.parse(localStorage.getItem(`eventos_${usuarioActivo}`)) || []; }
+        function guardarEventos(eventos) { localStorage.setItem(`eventos_${usuarioActivo}`, JSON.stringify(eventos)); }
+        function obtenerHistorial() { return JSON.parse(localStorage.getItem(`historial_${usuarioActivo}`)) || []; }
+        function guardarHistorial(historial) { localStorage.setItem(`historial_${usuarioActivo}`, JSON.stringify(historial)); }
+
+        function registrarHistorial(accion, nombre, tipo, fecha, hora, estado) {
+            let historial = obtenerHistorial();
+            const ahora = new Date();
+            const fechaStr = ahora.toISOString().split('T')[0];
+            const horaStr = ahora.toLocaleTimeString('es-CO');
+            historial.unshift({ id: Date.now(), accion, nombre, tipo, fecha: fecha || fechaStr, hora: hora || horaStr, estado: estado || '' });
+            if (historial.length > 500) historial.pop();
+            guardarHistorial(historial);
+        }
+
+        // ===== MODALES =====
+        function mostrarModalAlerta(mensaje) {
+            const modal = document.getElementById('modalAlerta');
+            document.getElementById('alertaMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('alertaBtn');
+            const handler = () => { modal.style.display = 'none'; btn.removeEventListener('click', handler); };
+            btn.addEventListener('click', handler);
+        }
+
+        function mostrarModalExito(mensaje, redirect = false) {
+            const modal = document.getElementById('modalExito');
+            document.getElementById('exitoMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('exitoBtn');
+            const handler = () => {
+                modal.style.display = 'none';
+                btn.removeEventListener('click', handler);
+                if (redirect) window.location.href = 'dashboard.html';
+            };
+            btn.addEventListener('click', handler);
+        }
+
+        function mostrarModalConfirmacion(mensaje, onConfirm) {
+            const modal = document.getElementById('modalConfirmacion');
+            document.getElementById('modalMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btnSi = document.getElementById('modalBtnSi');
+            const btnNo = document.getElementById('modalBtnNo');
+            const handlerSi = () => {
+                modal.style.display = 'none';
+                btnSi.removeEventListener('click', handlerSi);
+                btnNo.removeEventListener('click', handlerNo);
+                onConfirm();
+            };
+            const handlerNo = () => {
+                modal.style.display = 'none';
+                btnSi.removeEventListener('click', handlerSi);
+                btnNo.removeEventListener('click', handlerNo);
+            };
+            btnSi.addEventListener('click', handlerSi);
+            btnNo.addEventListener('click', handlerNo);
+        }
+
+        // ===== MENÚ =====
+        function toggleMenu() {
+            document.querySelector('.hamburger-menu').classList.toggle('active');
+            document.getElementById('sidebarMenu').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        function closeSidebar() {
+            document.querySelector('.hamburger-menu').classList.remove('active');
+            document.getElementById('sidebarMenu').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('usuarioActivo');
+            localStorage.removeItem('usuarioNombre');
+            localStorage.removeItem('usuarioTelefono');
+            localStorage.removeItem('sesionActiva');
+            window.location.href = 'index.html';
+        }
+
+        let eventoActual = null;
+        let tareasProyecto = [];
+
+        // ===== VALIDACIONES Y ANTICIPACIÓN =====
+        const ahoraBogota = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+        const hoy = () => {
+            const a = ahoraBogota();
+            return a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2,'0') + '-' + String(a.getDate()).padStart(2,'0');
+        };
+
+        const todasLasOpcionesMinutos = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
+        function llenarSelectAnticipacion(selectElement, valorActual, minutosDisponibles) {
+            selectElement.innerHTML = '';
+            const opcionesValidas = todasLasOpcionesMinutos.filter(m => m < minutosDisponibles);
+            (opcionesValidas.length ? opcionesValidas : todasLasOpcionesMinutos).forEach(m => {
+                const opcion = document.createElement('option');
+                opcion.value = m;
+                if (m < 60) opcion.textContent = m + ' minutos';
+                else {
+                    const hrs = Math.floor(m / 60);
+                    const mins = m % 60;
+                    if (mins === 0) opcion.textContent = hrs + ' hora' + (hrs > 1 ? 's' : '');
+                    else opcion.textContent = hrs + ' hora' + (hrs > 1 ? 's' : '') + ' ' + mins + ' minutos';
+                }
+                selectElement.appendChild(opcion);
+            });
+            if (opcionesValidas.length && opcionesValidas.includes(parseInt(valorActual))) selectElement.value = valorActual;
+            else if (opcionesValidas.length) selectElement.value = opcionesValidas[opcionesValidas.length - 1];
+            else selectElement.value = todasLasOpcionesMinutos[todasLasOpcionesMinutos.length - 1];
+        }
+
+        function actualizarOpcionesAnticipacion(tipoEvento) {
+            const ahora = ahoraBogota();
+            const hoyDate = hoy();
+            let fecha = null, horario = null, selectElement = null;
+            if (tipoEvento === 'tarea') {
+                fecha = document.getElementById('tareaFecha').value;
+                horario = document.getElementById('tareaInicio').value;
+                selectElement = document.getElementById('tareaAnticipacion');
+            } else if (tipoEvento === 'proyecto') {
+                fecha = document.getElementById('proyectoFecha').value;
+                horario = document.getElementById('proyectoInicio').value;
+                selectElement = document.getElementById('proyectoAnticipacion');
+            } else if (tipoEvento === 'cena') {
+                fecha = document.getElementById('cenaFecha').value;
+                horario = document.getElementById('cenaHora').value;
+                selectElement = document.getElementById('cenaAnticipacion');
+            } else if (tipoEvento === 'reunion') {
+                fecha = document.getElementById('reunionFecha').value;
+                horario = document.getElementById('reunionHora').value;
+                selectElement = document.getElementById('reunionAnticipacion');
+            }
+            if (!selectElement) return;
+            let minutosDisponibles = 9999;
+            if (fecha === hoyDate && horario) {
+                const [h, m] = horario.split(':');
+                const horaEvento = new Date(ahora);
+                horaEvento.setHours(parseInt(h), parseInt(m), 0);
+                minutosDisponibles = Math.floor((horaEvento - ahora) / 60000);
+            }
+            const valorActual = selectElement.value;
+            llenarSelectAnticipacion(selectElement, valorActual, minutosDisponibles);
+        }
+
+        function validarHoras(tipoEvento) {
+            const ahora = ahoraBogota();
+            const horaActual = ahora.getHours().toString().padStart(2,'0') + ':' + ahora.getMinutes().toString().padStart(2,'0');
+            const medioHoraAdelante = new Date(ahora.getTime() + 20 * 60000);
+            const horaMinima = medioHoraAdelante.getHours().toString().padStart(2,'0') + ':' + medioHoraAdelante.getMinutes().toString().padStart(2,'0');
+            const hoyDate = hoy();
+
+            if (tipoEvento === 'tarea') {
+                const fecha = document.getElementById('tareaFecha').value;
+                const inicio = document.getElementById('tareaInicio').value;
+                const fin = document.getElementById('tareaFin').value;
+                if (fecha === hoyDate && inicio < horaMinima) {
+                    mostrarModalAlerta('⚠️ La hora de inicio debe ser al menos 20 minutos superior a la hora actual (' + horaActual + ')');
+                    return false;
+                }
+                if (fin && inicio && fin <= inicio) {
+                    mostrarModalAlerta('⚠️ La hora de finalización debe ser superior a la hora de inicio');
+                    return false;
+                }
+                return true;
+            } else if (tipoEvento === 'proyecto') {
+                const fecha = document.getElementById('proyectoFecha').value;
+                const inicio = document.getElementById('proyectoInicio').value;
+                const fin = document.getElementById('proyectoFin').value;
+                if (fecha === hoyDate && inicio < horaMinima) {
+                    mostrarModalAlerta('⚠️ La hora de inicio debe ser al menos 20 minutos superior a la hora actual (' + horaActual + ')');
+                    return false;
+                }
+                if (fin && inicio && fin <= inicio) {
+                    mostrarModalAlerta('⚠️ La hora de finalización debe ser superior a la hora de inicio');
+                    return false;
+                }
+                return true;
+            } else if (tipoEvento === 'cena') {
+                const fecha = document.getElementById('cenaFecha').value;
+                const hora = document.getElementById('cenaHora').value;
+                if (fecha === hoyDate && hora < horaMinima) {
+                    mostrarModalAlerta('⚠️ La hora de la cena debe ser al menos 20 minutos superior a la hora actual (' + horaActual + ')');
+                    return false;
+                }
+                return true;
+            } else if (tipoEvento === 'reunion') {
+                const fecha = document.getElementById('reunionFecha').value;
+                const hora = document.getElementById('reunionHora').value;
+                if (fecha === hoyDate && hora < horaMinima) {
+                    mostrarModalAlerta('⚠️ La hora de la reunión debe ser al menos 20 minutos superior a la hora actual (' + horaActual + ')');
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
+
+        // ===== CARGAR LISTA DE EVENTOS =====
+        function cargarListaEventos() {
+            const eventos = obtenerEventos();
+            const select = document.getElementById('eventoSeleccionar');
+            const sinDiv = document.getElementById('sinEventosDiv');
+            const selectorDiv = document.getElementById('selectorEventosDiv');
+            select.innerHTML = '<option value="">-- Elige un evento --</option>';
+            if (eventos.length === 0) {
+                sinDiv.style.display = 'block';
+                selectorDiv.style.display = 'none';
+                document.getElementById('editarEventoForm').style.display = 'none';
+                return;
+            }
+            sinDiv.style.display = 'none';
+            selectorDiv.classList.add('show');
+            eventos.forEach(evento => {
+                const emoji = { tarea:'📋', proyecto:'📁', cena:'🍽️', reunion:'👥' }[evento.tipo] || '📅';
+                const option = document.createElement('option');
+                option.value = evento.id;
+                let estadoTexto = '';
+                if (evento.completado) estadoTexto = '✅ Completado';
+                else if (evento.estadoActual === 'fueraTiempo') estadoTexto = '⏰ Expirado';
+                else estadoTexto = '⏳ Pendiente';
+                option.textContent = `${emoji} ${evento.titulo} (${evento.fecha || 'sin fecha'}) - ${estadoTexto}`;
+                select.appendChild(option);
+            });
+        }
+
+        function eventoExpirado(evento) {
+            if (evento.completado) return true;
+            const ahora = new Date();
+            const fechaEvento = evento.fecha;
+            const inicio = evento.inicio || evento.hora;
+            if (!fechaEvento || !inicio) return false;
+            const fechaHoraInicio = new Date(`${fechaEvento}T${inicio}`);
+            return ahora > fechaHoraInicio;
+        }
+
+        function cargarEventoSeleccionado() {
+            const id = parseInt(document.getElementById('eventoSeleccionar').value);
+            if (!id) { document.getElementById('editarEventoForm').style.display = 'none'; return; }
+            const eventos = obtenerEventos();
+            eventoActual = eventos.find(e => e.id === id);
+            if (!eventoActual) return;
+            
+            document.getElementById('editarEventoForm').style.display = 'block';
+            
+            const expirado = eventoExpirado(eventoActual) || eventoActual.completado;
+            const bloqueoDiv = document.getElementById('bloqueoMensaje');
+            const btnActualizar = document.getElementById('btnActualizar');
+            const inputs = document.querySelectorAll('#editarEventoForm input, #editarEventoForm select, #editarEventoForm textarea');
+            
+            if (expirado) {
+                bloqueoDiv.style.display = 'block';
+                btnActualizar.classList.add('disabled-btn');
+                btnActualizar.disabled = true;
+                inputs.forEach(input => { input.disabled = true; });
+                const addBtn = document.querySelector('.add-subtask-btn');
+                if (addBtn) addBtn.disabled = true;
+            } else {
+                bloqueoDiv.style.display = 'none';
+                btnActualizar.classList.remove('disabled-btn');
+                btnActualizar.disabled = false;
+                inputs.forEach(input => { input.disabled = false; });
+                const addBtn = document.querySelector('.add-subtask-btn');
+                if (addBtn) addBtn.disabled = false;
+            }
+            
+            document.getElementById('titulo').value = eventoActual.titulo || '';
+            document.getElementById('descripcion').value = eventoActual.descripcion || '';
+            document.getElementById('tipoEvento').value = eventoActual.tipo;
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            if (eventoActual.tipo === 'tarea') {
+                document.getElementById('seccionTarea').classList.add('active');
+                document.getElementById('tareaFecha').value = eventoActual.fecha || '';
+                document.getElementById('tareaInicio').value = eventoActual.inicio || '';
+                document.getElementById('tareaFin').value = eventoActual.fin || '';
+                setTimeout(() => {
+                    actualizarOpcionesAnticipacion('tarea');
+                    document.getElementById('tareaAnticipacion').value = eventoActual.anticipacion || '30';
+                }, 50);
+            } else if (eventoActual.tipo === 'proyecto') {
+                document.getElementById('seccionProyecto').classList.add('active');
+                document.getElementById('proyectoFecha').value = eventoActual.fecha || '';
+                document.getElementById('proyectoInicio').value = eventoActual.inicio || '';
+                document.getElementById('proyectoFin').value = eventoActual.fin || '';
+                setTimeout(() => {
+                    actualizarOpcionesAnticipacion('proyecto');
+                    document.getElementById('proyectoAnticipacion').value = eventoActual.anticipacion || '30';
+                }, 50);
+                tareasProyecto = eventoActual.tareas ? [...eventoActual.tareas] : [];
+                mostrarTareasProyecto();
+            } else if (eventoActual.tipo === 'cena') {
+                document.getElementById('seccionCena').classList.add('active');
+                document.getElementById('cenaFecha').value = eventoActual.fecha || '';
+                document.getElementById('cenaHora').value = eventoActual.hora || '';
+                setTimeout(() => {
+                    actualizarOpcionesAnticipacion('cena');
+                    document.getElementById('cenaAnticipacion').value = eventoActual.anticipacion || '30';
+                }, 50);
+            } else if (eventoActual.tipo === 'reunion') {
+                document.getElementById('seccionReunion').classList.add('active');
+                document.getElementById('reunionFecha').value = eventoActual.fecha || '';
+                document.getElementById('reunionHora').value = eventoActual.hora || '';
+                setTimeout(() => {
+                    actualizarOpcionesAnticipacion('reunion');
+                    document.getElementById('reunionAnticipacion').value = eventoActual.anticipacion || '30';
+                }, 50);
+            }
+        }
+
+        function mostrarTareasProyecto() {
+            const lista = document.getElementById('listaTareas');
+            lista.innerHTML = '';
+            tareasProyecto.forEach((t, idx) => {
+                const div = document.createElement('div');
+                div.className = 'subtask-item';
+                div.innerHTML = `<span>${t.nombre}</span><button onclick="eliminarTareaProyecto(${idx})">✕</button>`;
+                lista.appendChild(div);
+            });
+        }
+        function agregarTareaProyecto() {
+            if (document.getElementById('btnActualizar').disabled) {
+                mostrarModalAlerta('No se pueden agregar tareas porque el evento ya expiró.');
+                return;
+            }
+            const nombre = prompt('Nombre de la tarea:');
+            if (nombre && nombre.trim()) {
+                tareasProyecto.push({ id: Date.now(), nombre: nombre.trim(), completada: false });
+                mostrarTareasProyecto();
+            }
+        }
+        function eliminarTareaProyecto(idx) {
+            if (document.getElementById('btnActualizar').disabled) {
+                mostrarModalAlerta('No se pueden eliminar tareas porque el evento ya expiró.');
+                return;
+            }
+            tareasProyecto.splice(idx, 1);
+            mostrarTareasProyecto();
+        }
+
+        // ===== ACTUALIZAR EVENTO =====
+        document.getElementById('editarEventoForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!eventoActual) return;
+            if (eventoExpirado(eventoActual) || eventoActual.completado) {
+                mostrarModalAlerta('No se puede editar un evento que ya expiró o está completado.');
+                return;
+            }
+            const tipo = eventoActual.tipo;
+            if (!validarHoras(tipo)) return;
+
+            const cambios = {
+                titulo: document.getElementById('titulo').value,
+                descripcion: document.getElementById('descripcion').value
+            };
+            if (tipo === 'tarea') {
+                cambios.fecha = document.getElementById('tareaFecha').value;
+                cambios.inicio = document.getElementById('tareaInicio').value;
+                cambios.fin = document.getElementById('tareaFin').value;
+                cambios.anticipacion = document.getElementById('tareaAnticipacion').value;
+            } else if (tipo === 'proyecto') {
+                cambios.fecha = document.getElementById('proyectoFecha').value;
+                cambios.inicio = document.getElementById('proyectoInicio').value;
+                cambios.fin = document.getElementById('proyectoFin').value;
+                cambios.anticipacion = document.getElementById('proyectoAnticipacion').value;
+                cambios.tareas = tareasProyecto;
+            } else if (tipo === 'cena') {
+                cambios.fecha = document.getElementById('cenaFecha').value;
+                cambios.hora = document.getElementById('cenaHora').value;
+                cambios.anticipacion = document.getElementById('cenaAnticipacion').value;
+            } else if (tipo === 'reunion') {
+                cambios.fecha = document.getElementById('reunionFecha').value;
+                cambios.hora = document.getElementById('reunionHora').value;
+                cambios.anticipacion = document.getElementById('reunionAnticipacion').value;
+            }
+            let eventos = obtenerEventos();
+            const idx = eventos.findIndex(e => e.id === eventoActual.id);
+            if (idx !== -1) {
+                const eventoOriginal = eventos[idx];
+                const eventoEditado = { ...eventoOriginal, ...cambios };
+                eventoEditado.estadoActual = eventoOriginal.estadoActual;
+                eventoEditado.estadoRegistrado = eventoOriginal.estadoRegistrado;
+                eventos[idx] = eventoEditado;
+                guardarEventos(eventos);
+                registrarHistorial('Editado', eventoEditado.titulo, 'evento', eventoEditado.fecha, eventoEditado.inicio || eventoEditado.hora, 'editado');
+                mostrarModalExito('✅ Evento actualizado correctamente', true);
+            }
+        });
+
+        function borrarEvento() {
+            if (!eventoActual) return;
+            mostrarModalConfirmacion('¿Eliminar este evento permanentemente?', () => {
+                let eventos = obtenerEventos();
+                eventos = eventos.filter(e => e.id !== eventoActual.id);
+                guardarEventos(eventos);
+                registrarHistorial('Eliminado', eventoActual.titulo, 'evento', eventoActual.fecha, eventoActual.inicio || eventoActual.hora, 'eliminado');
+                mostrarModalExito('✅ Evento eliminado correctamente', true);
+            });
+        }
+
+        // ===== INICIALIZACIÓN =====
+        document.addEventListener('DOMContentLoaded', () => {
+            const hoyStr = hoy();
+            document.querySelectorAll('input[type="date"]').forEach(input => input.min = hoyStr);
+
+            const campos = [
+                { tipo: 'tarea', fecha: 'tareaFecha', hora: 'tareaInicio', fin: 'tareaFin', anticipacion: 'tareaAnticipacion' },
+                { tipo: 'proyecto', fecha: 'proyectoFecha', hora: 'proyectoInicio', fin: 'proyectoFin', anticipacion: 'proyectoAnticipacion' },
+                { tipo: 'cena', fecha: 'cenaFecha', hora: 'cenaHora', anticipacion: 'cenaAnticipacion' },
+                { tipo: 'reunion', fecha: 'reunionFecha', hora: 'reunionHora', anticipacion: 'reunionAnticipacion' }
+            ];
+            campos.forEach(c => {
+                const fechaInput = document.getElementById(c.fecha);
+                const horaInput = document.getElementById(c.hora);
+                if (fechaInput) {
+                    fechaInput.addEventListener('change', () => actualizarOpcionesAnticipacion(c.tipo));
+                    fechaInput.addEventListener('change', () => validarHoras(c.tipo));
+                }
+                if (horaInput) {
+                    horaInput.addEventListener('change', () => actualizarOpcionesAnticipacion(c.tipo));
+                    horaInput.addEventListener('change', () => validarHoras(c.tipo));
+                }
+                if (c.fin) {
+                    const finInput = document.getElementById(c.fin);
+                    if (finInput) finInput.addEventListener('change', () => validarHoras(c.tipo));
+                }
+            });
+
+            cargarListaEventos();
+            const urlId = new URLSearchParams(window.location.search).get('id');
+            if (urlId) {
+                setTimeout(() => {
+                    const select = document.getElementById('eventoSeleccionar');
+                    if (select) {
+                        select.value = urlId;
+                        cargarEventoSeleccionado();
+                    }
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

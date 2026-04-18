@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart Agenda - Agregar Evento</title>
+    <style>
+        /* ===== ESTILOS MODERNOS (fondo azul oscuro) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: flex-start; flex: 1; padding-top: 80px; }
+        .container {
+            background: white; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 700px; margin: 0 20px 20px 20px; padding: 40px; transition: all 0.3s ease;
+        }
+        .header { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+        .logo-container { width: 80px; height: 80px; flex-shrink: 0; border-radius: 16px; overflow: hidden; background: #f5f5f5; }
+        .logo { width: 100%; height: 100%; object-fit: cover; filter: drop-shadow(0 4px 8px rgba(212,175,55,0.3)); }
+        .header-content { flex: 1; }
+        .header-content h1 { color: #d4af37; font-size: 28px; margin-bottom: 5px; }
+        .header-content p { color: #666; font-size: 14px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px; }
+        select, input, textarea {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 12px;
+            font-size: 14px; transition: all 0.2s; font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        select:focus, input:focus, textarea:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.1); }
+        .type-selector, .additional-fields { display: none; }
+        .type-selector.show, .additional-fields.show { display: block; }
+        .section {
+            display: none; background: #f9f9f9; border-radius: 16px; padding: 20px;
+            margin-bottom: 20px; border-left: 4px solid #d4af37; animation: slideIn 0.3s ease;
+        }
+        .section.active { display: block; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .section-title { font-size: 16px; font-weight: 600; color: #d4af37; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .anticipation-info { background-color: #fffbf0; border-left: 3px solid #d4af37; padding: 10px; margin-top: 10px; font-size: 12px; color: #744210; border-radius: 8px; }
+        .subtasks-section { margin-top: 15px; padding-top: 15px; border-top: 2px solid #e0e0e0; }
+        .add-subtask-btn { background-color: #e8dcc0; color: #333; padding: 8px; font-size: 13px; width: auto; margin-top: 10px; }
+        .subtask-item { background-color: white; padding: 10px; margin-top: 10px; border-radius: 10px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .subtask-item button { background-color: #dc3545; color: white; padding: 4px 12px; font-size: 12px; width: auto; margin: 0; }
+        button {
+            width: 100%; padding: 14px; background-color: #d4af37; color: #333; border: none;
+            border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s;
+        }
+        button:hover { background-color: #c9a227; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(212,175,55,0.3); }
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 350px;
+            text-align: center;
+        }
+        .modal-custom .modal-contenido button {
+            margin-top: 15px;
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+        }
+        @media (max-width: 768px) {
+            .content { padding-top: 70px; }
+            .container { padding: 20px; margin: 0 15px 20px 15px; }
+            .header { flex-direction: column; text-align: center; }
+            .logo-container { width: 60px; height: 60px; }
+            .header-content h1 { font-size: 22px; }
+            .hamburger-menu { top: 12px; left: 12px; padding: 10px; }
+            .hamburger-menu span { width: 24px; height: 2.5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html" onclick="closeSidebar()">📊 Dashboard</a>
+        <a href="agregar_evento.html" class="active" onclick="closeSidebar()">📋 Crear Evento</a>
+        <a href="editar_evento.html" onclick="closeSidebar()">✏️ Editar Evento</a>
+        <a href="habitos.html" onclick="closeSidebar()">⭐ Agregar Hábitos</a>
+        <a href="juegos.html" onclick="closeSidebar()">🎮 MiniJuegos</a>
+        <a href="chat.html" onclick="closeSidebar()">🤖 Asistente IA</a>
+        <a href="historial.html" onclick="closeSidebar()">📜 Historial</a>
+        <a href="configuracion.html" onclick="closeSidebar()">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                const usuario = localStorage.getItem('usuarioActivo');
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container"><img src="logo.png" alt="Logo" class="logo"></div>
+                <div class="header-content"><h1>Smart Agenda</h1><p>Crear nuevo evento</p></div>
+            </div>
+
+            <form id="eventoForm">
+                <div class="type-selector show">
+                    <div class="form-group"><label>Tipo de Evento</label><select id="tipoEvento" required><option value="">-- Selecciona --</option><option value="tarea">📋 Tarea</option><option value="proyecto">📁 Proyecto</option><option value="cena">🍽️ Cena</option><option value="reunion">👥 Reunión</option></select></div>
+                </div>
+
+                <div class="additional-fields">
+                    <div class="form-group"><label>Título</label><input type="text" id="titulo" placeholder="Pon tu título aquí" required></div>
+                    <div class="form-group"><label>Descripción</label><textarea id="descripcion" placeholder="Describe tu evento aquí"></textarea></div>
+                </div>
+
+                <div id="seccionTarea" class="section">
+                    <div class="section-title">Detalles de la Tarea</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="tareaFecha"></div>
+                    <div class="form-group"><label>Hora Inicio</label><input type="time" id="tareaInicio"></div>
+                    <div class="form-group"><label>Hora Fin</label><input type="time" id="tareaFin"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="tareaAnticipacion"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1h</option><option value="120">2h</option><option value="180">3h</option></select></div>
+                </div>
+
+                <div id="seccionProyecto" class="section">
+                    <div class="section-title">Horarios del Proyecto</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="proyectoFecha"></div>
+                    <div class="form-group"><label>Hora Inicio</label><input type="time" id="proyectoInicio"></div>
+                    <div class="form-group"><label>Hora Fin</label><input type="time" id="proyectoFin"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="proyectoAnticipacion"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1h</option><option value="120">2h</option></select></div>
+                    <div class="subtasks-section"><label>Tareas del proyecto</label><div id="listaTareas"></div><button type="button" class="add-subtask-btn" onclick="agregarTareaProyecto()">+ Agregar tarea</button></div>
+                </div>
+
+                <div id="seccionCena" class="section">
+                    <div class="section-title">Detalles de la Cena</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="cenaFecha"></div>
+                    <div class="form-group"><label>Hora</label><input type="time" id="cenaHora"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="cenaAnticipacion"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1h</option><option value="120">2h</option></select></div>
+                </div>
+
+                <div id="seccionReunion" class="section">
+                    <div class="section-title">Detalles de la Reunión</div>
+                    <div class="form-group"><label>Fecha</label><input type="date" id="reunionFecha"></div>
+                    <div class="form-group"><label>Hora</label><input type="time" id="reunionHora"></div>
+                    <div class="form-group"><label>Anticipación</label><select id="reunionAnticipacion"><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">1h</option><option value="120">2h</option></select></div>
+                </div>
+
+                <button type="submit">✅ Guardar Evento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modales -->
+    <div id="modalAlerta" class="modal-custom">
+        <div class="modal-contenido"><h3>⏰ Atención</h3><p id="alertaMensaje"></p><button id="alertaBtn">Entendido</button></div>
+    </div>
+    <div id="modalExito" class="modal-custom">
+        <div class="modal-contenido"><h3>✅ Éxito</h3><p id="exitoMensaje"></p><button id="exitoBtn">Entendido</button></div>
+    </div>
+
+    <script>
+        // Verificar sesión
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) {
+            window.location.href = 'index.html';
+        }
+
+        // Funciones localStorage por usuario
+        function obtenerEventos() { return JSON.parse(localStorage.getItem(`eventos_${usuarioActivo}`)) || []; }
+        function guardarEventos(eventos) { localStorage.setItem(`eventos_${usuarioActivo}`, JSON.stringify(eventos)); }
+
+        // ===== MENÚ =====
+        function toggleMenu() { document.querySelector('.hamburger-menu').classList.toggle('active'); document.getElementById('sidebarMenu').classList.toggle('active'); document.getElementById('sidebarOverlay').classList.toggle('active'); }
+        function closeSidebar() { document.querySelector('.hamburger-menu').classList.remove('active'); document.getElementById('sidebarMenu').classList.remove('active'); document.getElementById('sidebarOverlay').classList.remove('active'); }
+
+        // ===== MODALES =====
+        function mostrarModalAlerta(mensaje) {
+            const modal = document.getElementById('modalAlerta');
+            document.getElementById('alertaMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('alertaBtn');
+            const handler = () => { modal.style.display = 'none'; btn.removeEventListener('click', handler); };
+            btn.addEventListener('click', handler);
+        }
+        function mostrarModalExito(mensaje, redirect = false) {
+            const modal = document.getElementById('modalExito');
+            document.getElementById('exitoMensaje').innerText = mensaje;
+            modal.style.display = 'flex';
+            const btn = document.getElementById('exitoBtn');
+            const handler = () => {
+                modal.style.display = 'none';
+                btn.removeEventListener('click', handler);
+                if (redirect) window.location.href = 'dashboard.html';
+            };
+            btn.addEventListener('click', handler);
+        }
+
+        let selectTipo, form, additionalFields;
+        let tareasProyecto = [];
+
+        // ===== FUNCIONES DE VALIDACIÓN =====
+        const ahoraBogota = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+        const hoy = () => { const a = ahoraBogota(); return a.getFullYear() + '-' + String(a.getMonth()+1).padStart(2,'0') + '-' + String(a.getDate()).padStart(2,'0'); };
+
+        function validarHoraInicio(fecha, horaInicio) {
+            const hoyDate = hoy();
+            if (fecha !== hoyDate) return true;
+            if (!horaInicio) return false;
+            const ahora = ahoraBogota();
+            const [h, m] = horaInicio.split(':');
+            const horaEvento = new Date(ahora);
+            horaEvento.setHours(parseInt(h), parseInt(m), 0);
+            const diffMinutos = (horaEvento - ahora) / 60000;
+            if (diffMinutos < 20) {
+                mostrarModalAlerta(`⚠️ La hora de inicio debe ser al menos 20 minutos después de la hora actual (${ahora.getHours().toString().padStart(2,'0')}:${ahora.getMinutes().toString().padStart(2,'0')}).`);
+                return false;
+            }
+            return true;
+        }
+
+        function validarHorasFin(inicio, fin) {
+            if (!inicio || !fin) return true;
+            if (fin <= inicio) {
+                mostrarModalAlerta('⚠️ La hora de finalización debe ser superior a la hora de inicio.');
+                return false;
+            }
+            return true;
+        }
+
+        function validarAnticipacion(fecha, horaInicio, anticipacionMinutos) {
+            const hoyDate = hoy();
+            if (fecha !== hoyDate) return true;
+            if (!horaInicio) return false;
+            const ahora = ahoraBogota();
+            const [h, m] = horaInicio.split(':');
+            const horaEvento = new Date(ahora);
+            horaEvento.setHours(parseInt(h), parseInt(m), 0);
+            const minutosHastaEvento = (horaEvento - ahora) / 60000;
+            if (anticipacionMinutos > minutosHastaEvento) {
+                mostrarModalAlerta(`⚠️ La anticipación (${anticipacionMinutos} min) es mayor que el tiempo hasta el evento (${Math.floor(minutosHastaEvento)} min). Elige una anticipación menor.`);
+                return false;
+            }
+            return true;
+        }
+
+        function validarEvento(tipo) {
+            if (tipo === 'tarea') {
+                const fecha = document.getElementById('tareaFecha').value;
+                const inicio = document.getElementById('tareaInicio').value;
+                const fin = document.getElementById('tareaFin').value;
+                const anticipacion = parseInt(document.getElementById('tareaAnticipacion').value);
+                if (!fecha || !inicio || !fin) {
+                    mostrarModalAlerta('Completa fecha, hora inicio y hora fin para la tarea.');
+                    return false;
+                }
+                if (!validarHoraInicio(fecha, inicio)) return false;
+                if (!validarHorasFin(inicio, fin)) return false;
+                if (!validarAnticipacion(fecha, inicio, anticipacion)) return false;
+                return true;
+            } 
+            else if (tipo === 'proyecto') {
+                const fecha = document.getElementById('proyectoFecha').value;
+                const inicio = document.getElementById('proyectoInicio').value;
+                const fin = document.getElementById('proyectoFin').value;
+                const anticipacion = parseInt(document.getElementById('proyectoAnticipacion').value);
+                if (!fecha || !inicio || !fin) {
+                    mostrarModalAlerta('Completa fecha, hora inicio y hora fin para el proyecto.');
+                    return false;
+                }
+                if (!validarHoraInicio(fecha, inicio)) return false;
+                if (!validarHorasFin(inicio, fin)) return false;
+                if (!validarAnticipacion(fecha, inicio, anticipacion)) return false;
+                return true;
+            }
+            else if (tipo === 'cena') {
+                const fecha = document.getElementById('cenaFecha').value;
+                const hora = document.getElementById('cenaHora').value;
+                const anticipacion = parseInt(document.getElementById('cenaAnticipacion').value);
+                if (!fecha || !hora) {
+                    mostrarModalAlerta('Completa fecha y hora para la cena.');
+                    return false;
+                }
+                if (!validarHoraInicio(fecha, hora)) return false;
+                if (!validarAnticipacion(fecha, hora, anticipacion)) return false;
+                return true;
+            }
+            else if (tipo === 'reunion') {
+                const fecha = document.getElementById('reunionFecha').value;
+                const hora = document.getElementById('reunionHora').value;
+                const anticipacion = parseInt(document.getElementById('reunionAnticipacion').value);
+                if (!fecha || !hora) {
+                    mostrarModalAlerta('Completa fecha y hora para la reunión.');
+                    return false;
+                }
+                if (!validarHoraInicio(fecha, hora)) return false;
+                if (!validarAnticipacion(fecha, hora, anticipacion)) return false;
+                return true;
+            }
+            return false;
+        }
+
+        // Registrar en historial
+        function registrarHistorialCreacion(evento) {
+            let historial = JSON.parse(localStorage.getItem(`historial_${usuarioActivo}`)) || [];
+            const ahora = new Date();
+            const fechaStr = `${ahora.getFullYear()}-${String(ahora.getMonth()+1).padStart(2,'0')}-${String(ahora.getDate()).padStart(2,'0')}`;
+            const horaStr = ahora.toLocaleTimeString('es-CO');
+            historial.unshift({
+                id: Date.now(),
+                accion: 'Creado',
+                nombre: evento.titulo,
+                tipo: 'evento',
+                fecha: evento.fecha || fechaStr,
+                hora: evento.inicio || evento.hora || horaStr,
+                estado: 'creado'
+            });
+            if (historial.length > 500) historial.pop();
+            localStorage.setItem(`historial_${usuarioActivo}`, JSON.stringify(historial));
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            selectTipo = document.getElementById('tipoEvento');
+            form = document.getElementById('eventoForm');
+            additionalFields = document.querySelector('.additional-fields');
+
+            const hoyStr = hoy();
+            document.querySelectorAll('input[type="date"]').forEach(input => input.min = hoyStr);
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const tipo = selectTipo.value;
+                if (!tipo) { mostrarModalAlerta('Por favor, selecciona un tipo de evento'); return; }
+                const titulo = document.getElementById('titulo').value.trim();
+                if (!titulo) { mostrarModalAlerta('El título es obligatorio'); return; }
+
+                if (!validarEvento(tipo)) return;
+
+                const descripcion = document.getElementById('descripcion').value.trim() || '';
+
+                let evento = { 
+                    id: Date.now(), 
+                    tipo, 
+                    titulo, 
+                    descripcion, 
+                    completado: false,
+                    estadoActual: 'pendiente',
+                    estadoRegistrado: null,
+                    notificado: false
+                };
+
+                if (tipo === 'tarea') {
+                    evento.fecha = document.getElementById('tareaFecha').value;
+                    evento.inicio = document.getElementById('tareaInicio').value;
+                    evento.fin = document.getElementById('tareaFin').value;
+                    evento.anticipacion = document.getElementById('tareaAnticipacion').value;
+                } else if (tipo === 'proyecto') {
+                    evento.fecha = document.getElementById('proyectoFecha').value;
+                    evento.inicio = document.getElementById('proyectoInicio').value;
+                    evento.fin = document.getElementById('proyectoFin').value;
+                    evento.anticipacion = document.getElementById('proyectoAnticipacion').value;
+                    evento.tareas = tareasProyecto.map(t => ({ ...t, completada: false }));
+                } else if (tipo === 'cena') {
+                    evento.fecha = document.getElementById('cenaFecha').value;
+                    evento.hora = document.getElementById('cenaHora').value;
+                    evento.anticipacion = document.getElementById('cenaAnticipacion').value;
+                } else if (tipo === 'reunion') {
+                    evento.fecha = document.getElementById('reunionFecha').value;
+                    evento.hora = document.getElementById('reunionHora').value;
+                    evento.anticipacion = document.getElementById('reunionAnticipacion').value;
+                }
+
+                let eventos = obtenerEventos();
+                eventos.push(evento);
+                guardarEventos(eventos);
+                registrarHistorialCreacion(evento);
+
+                mostrarModalExito('✅ Evento guardado exitosamente', true);
+                form.reset();
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                additionalFields.classList.remove('show');
+                tareasProyecto = [];
+                actualizarListaTareas();
+                selectTipo.value = '';
+                selectTipo.dispatchEvent(new Event('change'));
+            });
+
+            selectTipo.addEventListener('change', function() {
+                document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+                if (this.value) {
+                    additionalFields.classList.add('show');
+                    const seccion = document.getElementById('seccion' + this.value.charAt(0).toUpperCase() + this.value.slice(1));
+                    if (seccion) seccion.classList.add('active');
+                } else {
+                    additionalFields.classList.remove('show');
+                }
+            });
+        });
+
+        function agregarTareaProyecto() {
+            const taskName = prompt('Nombre de la tarea:');
+            if (taskName && taskName.trim()) {
+                tareasProyecto.push({ nombre: taskName.trim(), id: Date.now() });
+                actualizarListaTareas();
+            }
+        }
+        function actualizarListaTareas() {
+            const lista = document.getElementById('listaTareas');
+            lista.innerHTML = '';
+            tareasProyecto.forEach((tarea, index) => {
+                const item = document.createElement('div');
+                item.className = 'subtask-item';
+                item.innerHTML = `<strong>${tarea.nombre}</strong><button onclick="eliminarTarea(${index})">Eliminar</button>`;
+                lista.appendChild(item);
+            });
+        }
+        function eliminarTarea(index) { tareasProyecto.splice(index, 1); actualizarListaTareas(); }
+
+        // Actualización de opciones de anticipación (opcional)
+        const todasLasOpcionesMinutos = [15,30,45,60,75,90,105,120,135,150,165,180];
+        function llenarSelectAnticipacion(selectElement, valorActual, minutosDisponibles) {
+            selectElement.innerHTML = '';
+            const opcionesValidas = todasLasOpcionesMinutos.filter(m => m < minutosDisponibles);
+            (opcionesValidas.length ? opcionesValidas : todasLasOpcionesMinutos).forEach(m => {
+                const opcion = document.createElement('option');
+                opcion.value = m;
+                if (m < 60) opcion.textContent = m + ' minutos';
+                else { const hrs = Math.floor(m/60), mins = m%60; if (mins===0) opcion.textContent = hrs + ' hora' + (hrs>1?'s':''); else opcion.textContent = hrs + ' hora' + (hrs>1?'s':'') + ' ' + mins + ' minutos'; }
+                selectElement.appendChild(opcion);
+            });
+            if (opcionesValidas.length && opcionesValidas.includes(parseInt(valorActual))) selectElement.value = valorActual;
+            else if (opcionesValidas.length) selectElement.value = opcionesValidas[opcionesValidas.length-1];
+            else selectElement.value = todasLasOpcionesMinutos[todasLasOpcionesMinutos.length-1];
+        }
+
+        function actualizarOpcionesAnticipacion(tipoEvento) {
+            const ahora = ahoraBogota();
+            const hoyDate = hoy();
+            let fecha = null, horario = null, selectElement = null;
+            if (tipoEvento === 'tarea') { fecha = document.getElementById('tareaFecha').value; horario = document.getElementById('tareaInicio').value; selectElement = document.getElementById('tareaAnticipacion'); }
+            else if (tipoEvento === 'proyecto') { fecha = document.getElementById('proyectoFecha').value; horario = document.getElementById('proyectoInicio').value; selectElement = document.getElementById('proyectoAnticipacion'); }
+            else if (tipoEvento === 'cena') { fecha = document.getElementById('cenaFecha').value; horario = document.getElementById('cenaHora').value; selectElement = document.getElementById('cenaAnticipacion'); }
+            else if (tipoEvento === 'reunion') { fecha = document.getElementById('reunionFecha').value; horario = document.getElementById('reunionHora').value; selectElement = document.getElementById('reunionAnticipacion'); }
+            if (!selectElement) return;
+            let minutosDisponibles = 9999;
+            if (fecha === hoyDate && horario) {
+                const [h,m] = horario.split(':');
+                const horaEvento = new Date(ahora);
+                horaEvento.setHours(parseInt(h), parseInt(m), 0);
+                minutosDisponibles = Math.floor((horaEvento - ahora) / 60000);
+            }
+            llenarSelectAnticipacion(selectElement, selectElement.value, minutosDisponibles);
+        }
+
+        document.getElementById('tareaInicio').addEventListener('change', () => actualizarOpcionesAnticipacion('tarea'));
+        document.getElementById('tareaFecha').addEventListener('change', () => actualizarOpcionesAnticipacion('tarea'));
+        document.getElementById('proyectoInicio').addEventListener('change', () => actualizarOpcionesAnticipacion('proyecto'));
+        document.getElementById('proyectoFecha').addEventListener('change', () => actualizarOpcionesAnticipacion('proyecto'));
+        document.getElementById('cenaHora').addEventListener('change', () => actualizarOpcionesAnticipacion('cena'));
+        document.getElementById('cenaFecha').addEventListener('change', () => actualizarOpcionesAnticipacion('cena'));
+        document.getElementById('reunionHora').addEventListener('change', () => actualizarOpcionesAnticipacion('reunion'));
+        document.getElementById('reunionFecha').addEventListener('change', () => actualizarOpcionesAnticipacion('reunion'));
+    </script>
+</body>
+</html> 

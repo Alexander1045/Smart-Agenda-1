@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" href="icon.png">
+    <title>Smart Agenda - Organiza tu vida</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header { text-align: center; padding: 3rem 2rem 1rem; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px); }
+        header h1 { font-size: 3rem; letter-spacing: 2px; background: linear-gradient(135deg, #d4af37, #f5e7a3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        header p { margin-top: 0.5rem; font-size: 1.2rem; opacity: 0.9; }
+        .hero { text-align: center; padding: 2rem 1rem; background: rgba(255,255,255,0.05); margin: 1rem 2rem; border-radius: 40px; backdrop-filter: blur(5px); }
+        .hero h2 { font-size: 2rem; color: #d4af37; margin-bottom: 1rem; }
+        .hero p { max-width: 800px; margin: 0 auto; font-size: 1.1rem; line-height: 1.6; }
+
+        /* Sección de características */
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+            border-radius: 24px;
+            padding: 2rem;
+            flex: 1;
+            min-width: 250px;
+            transition: 0.3s;
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+        .feature-card:hover { transform: translateY(-8px); background: rgba(255,255,255,0.15); }
+        .feature-card .emoji { font-size: 2.5rem; margin-bottom: 1rem; }
+        .feature-card h3 { color: #d4af37; margin-bottom: 0.8rem; font-size: 1.4rem; }
+        .feature-card p { font-size: 0.95rem; line-height: 1.5; opacity: 0.9; }
+
+        /* Sección cómo funciona */
+        .how-it-works {
+            background: rgba(0,0,0,0.3);
+            border-radius: 40px;
+            margin: 2rem;
+            padding: 2rem;
+            text-align: center;
+        }
+        .how-it-works h2 { color: #d4af37; font-size: 1.8rem; margin-bottom: 1rem; }
+        .steps {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .step {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+            flex: 1;
+            min-width: 180px;
+        }
+        .step .step-number {
+            background: #d4af37;
+            color: #1a1a2e;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .step h3 { margin-bottom: 0.5rem; }
+
+        /* Estadísticas simuladas */
+        .stats-section {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem;
+            padding: 1rem;
+        }
+        .stat-item {
+            background: rgba(212,175,55,0.15);
+            border-radius: 20px;
+            padding: 1rem 2rem;
+            text-align: center;
+            min-width: 150px;
+            backdrop-filter: blur(4px);
+        }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #d4af37; }
+        .stat-label { font-size: 0.9rem; }
+
+        /* Sección VIP mejorada */
+        .vip-section {
+            background: linear-gradient(135deg, #2a1e3c, #1a1a2e);
+            margin: 2rem;
+            padding: 2rem;
+            border-radius: 40px;
+            text-align: center;
+            border: 2px solid #d4af37;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .vip-section h2 {
+            font-size: 2rem;
+            color: #d4af37;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .vip-badge {
+            background: #d4af37;
+            color: #1a1a2e;
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .vip-benefits {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .vip-benefit {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1rem 1.5rem;
+            flex: 1;
+            min-width: 180px;
+            backdrop-filter: blur(4px);
+        }
+        .vip-benefit span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+        .vip-benefit p { font-size: 0.9rem; font-weight: 500; }
+        .vip-button {
+            background: transparent;
+            border: 2px solid #d4af37;
+            color: #d4af37;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        .vip-button:hover {
+            background: #d4af37;
+            color: #1a1a2e;
+            transform: scale(1.02);
+        }
+
+        /* Botones principales */
+        .botones-accion { display: flex; justify-content: center; gap: 1.5rem; margin: 2rem 0; flex-wrap: wrap; }
+        .btn { padding: 14px 32px; font-size: 1.1rem; font-weight: 700; border-radius: 50px; cursor: pointer; transition: 0.3s; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #d4af37; color: #1a1a2e; box-shadow: 0 4px 15px rgba(212,175,55,0.3); }
+        .btn-primary:hover { background: #c9a227; transform: translateY(-3px); }
+        .btn-secondary { background: rgba(255,255,255,0.15); backdrop-filter: blur(5px); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.25); transform: translateY(-3px); }
+
+        footer { background: rgba(0,0,0,0.5); text-align: center; padding: 2rem; margin-top: auto; }
+        footer h2 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #d4af37; }
+        footer a { color: #d4af37; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Modal */
+        .modal-custom {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 4000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-custom .modal-contenido {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            animation: fadeInUp 0.3s ease;
+            color: #333;
+        }
+        .modal-custom .modal-contenido h3 { color: #d4af37; margin-bottom: 15px; }
+        .modal-custom .modal-contenido p { margin: 15px 0; line-height: 1.5; }
+        .modal-custom .modal-contenido button {
+            background-color: #d4af37;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: auto;
+            margin-top: 10px;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            header h1 { font-size: 2.2rem; }
+            .hero { margin: 0.5rem; padding: 1.5rem; }
+            .features, .steps, .stats-section { gap: 1rem; }
+            .how-it-works { margin: 1rem; padding: 1.5rem; }
+            .vip-section { margin: 1rem; padding: 1.5rem; }
+            .btn { padding: 10px 20px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Si ya hay sesión, redirigir directamente al dashboard
+        if (localStorage.getItem('usuarioActivo')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+    <header>
+        <h1>Smart Agenda</h1>
+        <p>Organiza tu tiempo, alcanza tus metas</p>
+        <br><hr><br>
+        <div class="botones-accion">
+            <button class="btn btn-primary" onclick="location.href='login.html'">🚪 Iniciar Sesión</button>
+            <button class="btn btn-secondary" onclick="location.href='register.html'">📝 Registrarse</button>
+        </div>
+    </header>
+    <div class="hero">
+        <h2>Bienvenido a tu nuevo aliado de productividad</h2>
+        <p>Gestiona eventos, tareas y hábitos de forma inteligente. Con recordatorios personalizados y seguimiento de rachas, nunca más olvidarás lo importante.</p>
+    </div>
+
+    <!-- Características principales -->
+    <div class="features">
+        <div class="feature-card">
+            <div class="emoji">📅</div>
+            <h3>Gestión de Eventos</h3>
+            <p>Crea tareas, proyectos, reuniones y cenas con fechas, horas y anticipación. Organiza tu día con facilidad.</p>
+        </div>
+        <div class="feature-card">
+            <div class="emoji">⭐</div>
+            <h3>Seguimiento de Hábitos</h3>
+            <p>Añade hábitos diarios y mantén una racha de constancia. Visualiza tu progreso y recibe motivación.</p>
+        </div>
+        <div class="feature-card">
+            <div class="emoji">🤖</div>
+            <h3>Asistente IA</h3>
+            <p>Habla con nuestra IA local que entiende lenguaje natural. Crea eventos, consulta tu agenda y recibe consejos.</p>
+        </div>
+        <div class="feature-card">
+            <div class="emoji">🔔</div>
+            <h3>Recordatorios Inteligentes</h3>
+            <p>Notificaciones automáticas según la anticipación que elijas. Nunca más olvidaras algo importante.</p>
+        </div>
+    </div>
+
+    <!-- Cómo funciona -->
+    <div class="how-it-works">
+        <h2>📌 ¿Cómo funciona?</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Regístrate</h3>
+                <p>Crea tu cuenta gratis en segundos.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Organiza</h3>
+                <p>Añade eventos y hábitos con fechas y horas.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Recibe recordatorios</h3>
+                <p>Activa notificaciones y olvídate de revisar constantemente.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Completa y mejora</h3>
+                <p>Marca tareas como hechas, mantén tu racha y sé más productivo.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas simuladas (para dar credibilidad) -->
+    <div class="stats-section">
+        <div class="stat-item">
+            <div class="stat-number">+500</div>
+            <div class="stat-label">Eventos creados</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">98%</div>
+            <div class="stat-label">Usuarios satisfechos</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">24/7</div>
+            <div class="stat-label">Disponibilidad</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">Gratis</div>
+            <div class="stat-label">Sin costo</div>
+        </div>
+    </div>
+
+    <!-- Sección VIP expandida -->
+    <div class="vip-section">
+        <h2>✨ Smart Agenda VIP <span class="vip-badge">Próximamente</span></h2>
+        <div class="vip-benefits">
+            <div class="vip-benefit"><span>📊</span><p>Estadísticas avanzadas de productividad</p></div>
+            <div class="vip-benefit"><span>☁️</span><p>Sincronización en la nube entre dispositivos</p></div>
+            <div class="vip-benefit"><span>📧</span><p>Recordatorios por WhatsApp</p></div>
+            <div class="vip-benefit"><span>🎨</span><p>Temas y colores personalizables</p></div>
+            <div class="vip-benefit"><span>📎</span><p>Adjuntar archivos a eventos</p></div>
+            <div class="vip-benefit"><span>👥</span><p>Compartir agendas con equipo</p></div>
+        </div>
+        <button class="vip-button" id="btnVipInfo">📢 Descubre los beneficios VIP</button>
+    </div>
+
+    <footer>
+        <h2>📞 Contacto y Soporte</h2>
+        <p>¿Tienes alguna duda o sugerencia? Escríbenos a <a href="mailto:soporte@smartagenda.com">soporte@smartagenda.com</a></p>
+        <p>&copy; 2025 Smart Agenda - Tu organización inteligente</p>
+    </footer>
+
+    <!-- Modal personalizado para VIP -->
+    <div id="modalVip" class="modal-custom">
+        <div class="modal-contenido">
+            <div style="font-size: 48px;">👑✨</div>
+            <h3>Smart Agenda VIP</h3>
+            <p>🌟 La membresía VIP aún no está disponible, pero estamos trabajando para ofrecerte funcionalidades exclusivas como sincronización en la nube, estadísticas avanzadas y mucho más.</p>
+            <p>📢 ¡Pronto tendremos novedades! Mantente atento a nuestras actualizaciones.</p>
+            <button id="btnCerrarVip">Entendido</button>
+        </div>
+    </div>
+
+    <script>
+        // Mostrar modal personalizado al hacer clic en el botón VIP
+        const btnVip = document.getElementById('btnVipInfo');
+        const modalVip = document.getElementById('modalVip');
+        const btnCerrar = document.getElementById('btnCerrarVip');
+
+        btnVip.addEventListener('click', () => {
+            modalVip.style.display = 'flex';
+        });
+
+        btnCerrar.addEventListener('click', () => {
+            modalVip.style.display = 'none';
+        });
+
+        // Cerrar modal si se hace clic fuera del contenido
+        window.addEventListener('click', (e) => {
+            if (e.target === modalVip) {
+                modalVip.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

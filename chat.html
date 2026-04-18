@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link rel="icon" type="image/x-icon" class="icon" href="icon.png">
+    <title>Smart AI - Asistente Inteligente</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.02) 2px, rgba(255,255,255,0.02) 4px);
+            pointer-events: none;
+            z-index: -1;
+        }
+        .hamburger-menu {
+            position: fixed; top: 15px; left: 15px; z-index: 3000; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px;
+            background-color: #d4af37; padding: 12px; border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.3s ease;
+        }
+        .hamburger-menu span { display: block; width: 28px; height: 3px; background-color: #1a1a1a; border-radius: 2px; transition: all 0.3s ease; }
+        .hamburger-menu.active span:nth-child(1) { transform: rotate(45deg) translate(8px, 8px); }
+        .hamburger-menu.active span:nth-child(2) { opacity: 0; }
+        .hamburger-menu.active span:nth-child(3) { transform: rotate(-45deg) translate(8px, -8px); }
+        .sidebar-menu {
+            position: fixed; left: -300px; top: 0; width: 280px; height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 80px 20px 20px; transition: left 0.3s ease; z-index: 2999;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5); overflow-y: auto;
+        }
+        .sidebar-menu.active { left: 0; }
+        .sidebar-menu a {
+            display: flex; align-items: center; gap: 15px; padding: 15px; color: #fff;
+            text-decoration: none; font-weight: 600; border-radius: 8px; transition: all 0.3s; margin-bottom: 8px;
+        }
+        .sidebar-menu a:hover, .sidebar-menu a.active { background-color: #d4af37; color: #333; }
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 2998;
+        }
+        .sidebar-overlay.active { display: block; }
+        .content { display: flex; justify-content: center; align-items: center; flex: 1; padding: 80px 20px 20px; }
+        .container {
+            background: white; border-radius: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            width: 100%; max-width: 1000px; padding: 30px; transition: all 0.3s ease;
+        }
+        .header {
+            display: flex; align-items: center; gap: 20px; margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 15px;
+        }
+        .logo-container {
+            width: 60px; height: 60px; background: #1a1a1a; border-radius: 20px;
+            display: flex; align-items: center; justify-content: center; font-size: 32px;
+            flex-shrink: 0;
+        }
+        .header-content h1 { color: #d4af37; font-size: 26px; margin-bottom: 4px; }
+        .header-content p { color: #666; font-size: 13px; }
+        .ai-badge {
+            margin-left: auto; background: linear-gradient(135deg, #d4af37, #c9a227);
+            color: #1a1a1a; font-size: 11px; font-weight: 700; padding: 5px 10px;
+            border-radius: 20px; letter-spacing: 0.5px;
+        }
+        .quick-chips {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+        }
+        .chip {
+            background: #f3f3f3; border: 1.5px solid #e0e0e0; border-radius: 20px;
+            padding: 6px 13px; font-size: 12px; cursor: pointer; color: #444;
+            transition: all 0.2s; white-space: nowrap;
+        }
+        .chip:hover { background: #d4af37; border-color: #d4af37; color: #1a1a1a; font-weight: 600; }
+        .chat-box {
+            height: 480px; background: #f8f9fa; border-radius: 20px; padding: 18px;
+            margin-bottom: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+        }
+        .chat-box::-webkit-scrollbar { width: 6px; }
+        .chat-box::-webkit-scrollbar-track { background: #e9ecef; border-radius: 10px; }
+        .chat-box::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 10px; }
+        .message {
+            max-width: 85%; padding: 12px 18px; border-radius: 20px; font-size: 14px;
+            line-height: 1.6; animation: fadeIn 0.3s ease; word-break: break-word;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .message.ai {
+            align-self: flex-start; background: white; color: #333;
+            border: 1px solid #dee2e6; border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            white-space: pre-wrap;
+        }
+        .message.ai strong { color: #c9a227; }
+        .message.user {
+            align-self: flex-end; background: #d4af37; color: #1a1a1a;
+            font-weight: 500; border-bottom-right-radius: 4px;
+        }
+        .typing-indicator {
+            align-self: flex-start; background: white; border: 1px solid #dee2e6;
+            border-radius: 20px; border-bottom-left-radius: 4px;
+            padding: 14px 20px; display: none; gap: 6px; align-items: center;
+        }
+        .typing-indicator.show { display: flex; }
+        .dot {
+            width: 8px; height: 8px; background: #d4af37; border-radius: 50%;
+            animation: bounce 1.2s infinite;
+        }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-7px); } }
+        .input-area { display: flex; gap: 10px; }
+        .input-area input {
+            flex: 1; padding: 14px 20px; border: 2px solid #e0e0e0; border-radius: 50px;
+            font-size: 14px; transition: all 0.2s;
+        }
+        .input-area input:focus { outline: none; border-color: #d4af37; box-shadow: 0 0 0 3px rgba(212,175,55,0.1); }
+        .send-btn {
+            padding: 0 28px; background: #1a1a1a; color: #d4af37; border: none;
+            border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.2s;
+        }
+        .send-btn:hover { background: #333; transform: translateY(-2px); }
+        @media (max-width: 768px) {
+            .container { padding: 18px; }
+            .chat-box { height: 400px; }
+            .message { max-width: 95%; font-size: 13px; }
+            .send-btn { padding: 0 18px; }
+            .ai-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" onclick="toggleMenu()"><span></span><span></span><span></span></div>
+    <div class="sidebar-menu" id="sidebarMenu">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <a href="agregar_evento.html">📋 Crear Evento</a>
+        <a href="editar_evento.html">✏️ Editar Evento</a>
+        <a href="habitos.html">⭐ Agregar Hábitos</a>
+        <a href="juegos.html">🎮 MiniJuegos</a>
+        <a href="chat.html" class="active">🤖 Asistente IA</a>
+        <a href="historial.html">📜 Historial</a>
+        <a href="configuracion.html">⚙️ Configuración</a>
+        <hr><a href="#" onclick="cerrarSesion()">🚪 Cerrar Sesión</a>
+        <script>
+            function cerrarSesion() {
+                const usuario = localStorage.getItem('usuarioActivo');
+                localStorage.removeItem('usuarioActivo');
+                localStorage.removeItem('usuarioNombre');
+                localStorage.removeItem('usuarioTelefono');
+                localStorage.removeItem('sesionActiva');
+                window.location.href = 'index.html';
+            }
+        </script>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+    <div class="content">
+        <div class="container">
+            <div class="header">
+                <div class="logo-container">🧠</div>
+                <div class="header-content">
+                    <h1>Smart AI</h1>
+                    <p>Asistente inteligente - Respeta todas las reglas de tu agenda</p>
+                </div>
+            </div>
+
+            <div class="quick-chips">
+                <span class="chip" onclick="sendChip('¿Qué eventos tengo hoy?')">📅 Eventos de hoy</span>
+                <span class="chip" onclick="sendChip('Muéstrame mis hábitos')">⭐ Mis hábitos</span>
+                <span class="chip" onclick="sendChip('¿Cómo va mi racha?')">🔥 Mi racha</span>
+                <span class="chip" onclick="sendChip('Estadísticas de esta semana')">📊 Estadísticas</span>
+                <span class="chip" onclick="sendChip('Dame un consejo de productividad')">💡 Consejo</span>
+                <span class="chip" onclick="sendChip('Crea una tarea: Revisar correo hoy de 3pm a 4pm')">📝 Ej: crear tarea con rango</span>
+            </div>
+
+            <div class="chat-box" id="chatBox">
+                <div class="message ai">
+                    ✨ <strong>¡Hola! Soy tu asistente IA.</strong><br><br>
+                    He mejorado mi capacidad para crear eventos. Ahora entiendo rangos de hora (ej: "de 3pm a 5pm") y valido todas las reglas:<br>
+                    • <strong>20 minutos mínimos</strong> para eventos de hoy.<br>
+                    • <strong>Hora fin > hora inicio</strong> en tareas y proyectos.<br>
+                    • <strong>Anticipación</strong> no mayor al tiempo disponible.<br><br>
+                    <strong>Ejemplos válidos:</strong><br>
+                    → "Crea una tarea: Leer libro mañana a las 8pm"<br>
+                    → "Crea una reunión con equipo hoy de 2pm a 3pm"<br>
+                    → "Proyecto: Planificar viaje el 20 de mayo de 10am a 12pm"<br><br>
+                    <em>Si falta la hora fin, te la pediré. ¡Pruébalo!</em>
+                </div>
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="userInput" placeholder="Ej: Crea una tarea: Preparar presentación hoy de 4pm a 5pm" autocomplete="off">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== VERIFICAR SESIÓN ====================
+        const usuarioActivo = localStorage.getItem('usuarioActivo');
+        if (!usuarioActivo) window.location.href = 'index.html';
+
+        // ==================== FUNCIONES DE ACCESO A DATOS ====================
+        function obtenerEventos() { return JSON.parse(localStorage.getItem(`eventos_${usuarioActivo}`)) || []; }
+        function guardarEventos(e) { localStorage.setItem(`eventos_${usuarioActivo}`, JSON.stringify(e)); }
+        function obtenerHabitos() { return JSON.parse(localStorage.getItem(`habitos_${usuarioActivo}`)) || []; }
+        function guardarHabitos(h) { localStorage.setItem(`habitos_${usuarioActivo}`, JSON.stringify(h)); }
+        function obtenerHistorial() { return JSON.parse(localStorage.getItem(`historial_${usuarioActivo}`)) || []; }
+        function guardarHistorial(h) { localStorage.setItem(`historial_${usuarioActivo}`, JSON.stringify(h)); }
+        function obtenerRachaData() { return JSON.parse(localStorage.getItem(`racha_${usuarioActivo}`)) || { valor: 0, ultimaFecha: null }; }
+
+        function registrarHistorial(accion, nombre, tipo, fecha, hora, estado) {
+            let h = obtenerHistorial();
+            h.unshift({ id: Date.now(), accion, nombre, tipo, fecha: fecha || fechaLocal(), hora: hora || '', estado: estado || '' });
+            if (h.length > 500) h.pop();
+            guardarHistorial(h);
+        }
+
+        // ==================== FECHAS Y HORAS LOCAL (Colombia) ====================
+        function ahoraBogota() {
+            return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+        }
+        function fechaLocal() {
+            const a = ahoraBogota();
+            return `${a.getFullYear()}-${String(a.getMonth()+1).padStart(2,'0')}-${String(a.getDate()).padStart(2,'0')}`;
+        }
+        function horaLocalStr() {
+            const a = ahoraBogota();
+            return `${String(a.getHours()).padStart(2,'0')}:${String(a.getMinutes()).padStart(2,'0')}`;
+        }
+
+        // ==================== VALIDACIONES (idénticas a agregar_evento.html) ====================
+        function validarHoraInicio(fecha, horaInicio) {
+            const hoyDate = fechaLocal();
+            if (fecha !== hoyDate) return { ok: true };
+            if (!horaInicio) return { ok: false, msg: "No se especificó la hora de inicio." };
+            const ahora = ahoraBogota();
+            const [h, m] = horaInicio.split(':').map(Number);
+            const horaEvento = new Date(ahora);
+            horaEvento.setHours(h, m, 0, 0);
+            const diffMin = (horaEvento - ahora) / 60000;
+            if (diffMin < 20) {
+                const horaMin = new Date(ahora.getTime() + 20 * 60000);
+                const minSugerida = `${String(horaMin.getHours()).padStart(2,'0')}:${String(horaMin.getMinutes()).padStart(2,'0')}`;
+                return { ok: false, msg: `⚠️ La hora de inicio (${horaInicio}) debe ser al menos 20 minutos después de la hora actual (${horaLocalStr()}). El evento es hoy, así que la hora debe ser ≥ ${minSugerida}.` };
+            }
+            return { ok: true };
+        }
+
+        function validarHorasFin(inicio, fin) {
+            if (!inicio || !fin) return { ok: true };
+            if (fin <= inicio) {
+                return { ok: false, msg: `⚠️ La hora de finalización (${fin}) debe ser superior a la hora de inicio (${inicio}).` };
+            }
+            return { ok: true };
+        }
+
+        function validarAnticipacion(fecha, horaInicio, anticipacionMin) {
+            if (fecha !== fechaLocal()) return { ok: true };
+            if (!horaInicio) return { ok: false, msg: "No se pudo validar la anticipación." };
+            const ahora = ahoraBogota();
+            const [h, m] = horaInicio.split(':').map(Number);
+            const horaEvento = new Date(ahora);
+            horaEvento.setHours(h, m, 0, 0);
+            const minutosHasta = Math.floor((horaEvento - ahora) / 60000);
+            if (anticipacionMin > minutosHasta) {
+                return { ok: false, msg: `⚠️ La anticipación (${anticipacionMin} min) es mayor que el tiempo hasta el evento (${minutosHasta} min). Elige una anticipación menor (por ejemplo, ${Math.floor(minutosHasta/2)} min).` };
+            }
+            return { ok: true };
+        }
+
+        // ==================== PROCESAMIENTO DE INTENCIONES ====================
+        function procesarIntencion(texto) {
+            texto = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            
+            if (texto.includes('ayuda') || texto.includes('que puedes hacer')) return mostrarAyuda();
+            if (texto.includes('consejo') || texto.includes('recomendacion')) return darConsejo();
+            if (texto.match(/eventos|tareas|que tengo|pendientes|proximos/i) && !texto.includes('crea')) return listarEventos(texto);
+            if (texto.match(/habitos|hábitos|mis habitos/i)) return listarHabitos();
+            if (texto.includes('racha')) return infoRacha();
+            if (texto.match(/completa|completar|marca|hecho|realizado/) && texto.includes('habito')) return completarHabito(texto);
+            if (texto.match(/completa|completar|marca|realizado/) && (texto.includes('evento') || texto.includes('tarea'))) return completarEvento(texto);
+            if (texto.includes('crea') || texto.includes('nuevo') || texto.includes('agregar')) {
+                if (texto.match(/tarea|proyecto|cena|reunion|evento/)) return crearEventoInteligente(texto);
+            }
+            if (texto.includes('elimina') || texto.includes('borra')) {
+                if (texto.includes('habito')) return eliminarHabito(texto);
+                if (texto.includes('evento') || texto.includes('tarea')) return eliminarEvento(texto);
+            }
+            if (texto.includes('estadistica') || texto.includes('resumen') || texto.includes('productividad')) {
+                let periodo = 'hoy';
+                if (texto.includes('semana')) periodo = 'semana';
+                if (texto.includes('mes')) periodo = 'mes';
+                return generarEstadisticas(periodo);
+            }
+            if (texto.includes('historial')) return consultarHistorial(texto);
+            if (texto.match(/^(hola|buenas|que tal|hey|saludos)/)) return "👋 ¡Hola! ¿Necesitas ayuda con tu agenda?";
+            if (texto.match(/gracias/)) return "¡De nada! Estoy aquí para ayudarte.";
+            
+            return "No entendí bien. Escribe 'ayuda' para ver ejemplos de lo que puedo hacer.";
+        }
+
+        function mostrarAyuda() {
+            return `📌 *Comandos disponibles:*\n
+• "Eventos de hoy" / "Tareas pendientes"
+• "Hábitos" / "Mis hábitos"
+• "Racha" / "Cómo va mi racha"
+• "Completa el hábito de [nombre]"
+• "Crea una [tarea|proyecto|cena|reunion]: [título] [fecha] de [horaInicio] a [horaFin]"
+• "Elimina el evento/hábito [nombre]"
+• "Estadísticas de [hoy/esta semana/mes]"
+• "Historial de [fecha]"
+• "Consejo"
+¡Pruébalos!`;
+        }
+
+        function darConsejo() {
+            const racha = obtenerRachaData().valor;
+            const eventos = obtenerEventos();
+            const pendientes = eventos.filter(e => !e.completado && e.fecha === fechaLocal());
+            if (racha === 0) return "🔥 ¡Hoy puedes empezar tu racha! Completa todos tus hábitos para sumar tu primer día. ¡Tú puedes!";
+            if (pendientes.length > 2) return `📅 Tienes ${pendientes.length} eventos pendientes hoy. Organízalos por prioridad y ve uno a uno. ¡Tú controlas tu tiempo!`;
+            if (racha > 5) return `🎉 Llevas ${racha} días de racha. ¡Eres imparable! Sigue así, la constancia es clave.`;
+            return "💡 Mi consejo: Dedica 5 minutos cada mañana a planificar tu día. Revisa tus eventos y elige los 3 más importantes. ¡La productividad empieza con pequeños hábitos!";
+        }
+
+        // ==================== LISTAR, COMPLETAR, ELIMINAR (sin cambios relevantes) ====================
+        function listarEventos(texto) {
+            let eventos = obtenerEventos();
+            let filtro = 'todos';
+            if (texto.includes('hoy')) filtro = 'hoy';
+            else if (texto.includes('pendientes')) filtro = 'pendientes';
+            else if (texto.includes('completados')) filtro = 'completados';
+            
+            const hoy = fechaLocal();
+            let filtrados = [];
+            if (filtro === 'hoy') filtrados = eventos.filter(e => e.fecha === hoy);
+            else if (filtro === 'pendientes') filtrados = eventos.filter(e => !e.completado);
+            else if (filtro === 'completados') filtrados = eventos.filter(e => e.completado);
+            else filtrados = eventos;
+            
+            if (filtrados.length === 0) return `No hay eventos ${filtro === 'hoy' ? 'para hoy' : filtro === 'pendientes' ? 'pendientes' : filtro === 'completados' ? 'completados' : ''}. ¡Aprovecha tu tiempo!`;
+            
+            let mensaje = `📅 *Eventos ${filtro === 'hoy' ? 'de hoy' : filtro === 'pendientes' ? 'pendientes' : filtro === 'completados' ? 'completados' : 'registrados'}*:\n`;
+            filtrados.forEach(ev => {
+                const estado = ev.completado ? '✅' : (ev.estadoActual === 'enProgreso' ? '🔄' : '⏳');
+                mensaje += `${estado} ${ev.titulo} (${ev.tipo}) - ${ev.fecha || 'sin fecha'} ${ev.inicio || ev.hora || ''} ${ev.fin ? `a ${ev.fin}` : ''}\n`;
+            });
+            return mensaje;
+        }
+        
+        function listarHabitos() {
+            const habitos = obtenerHabitos();
+            if (habitos.length === 0) return "No tienes hábitos aún. Ve a 'Agregar Hábitos' para crear algunos.";
+            const completados = habitos.filter(h => h.completado).length;
+            let lista = "";
+            habitos.forEach(h => { lista += `${h.completado ? '✅' : '⏳'} ${h.nombre}\n`; });
+            return `📊 *Mis hábitos* (${completados}/${habitos.length} completados):\n${lista}`;
+        }
+        
+        function infoRacha() {
+            const rachaData = obtenerRachaData();
+            const racha = rachaData.valor;
+            let msg = `🔥 *Racha actual:* ${racha} día${racha !== 1 ? 's' : ''}. `;
+            if (racha === 0) msg += "¡Completa todos los hábitos hoy para empezar tu racha!";
+            else if (racha < 3) msg += "¡Buen inicio! Sigue así.";
+            else if (racha < 7) msg += "¡Vas excelente! No rompas la racha.";
+            else if (racha < 15) msg += "¡Imparable! Eres una máquina.";
+            else msg += "¡LEYENDA! Eres un ejemplo de disciplina.";
+            return msg;
+        }
+        
+        function completarHabito(texto) {
+            const habitos = obtenerHabitos();
+            let nombre = texto.replace(/completa|completar|marca|hecho|realizado|el habito|de|:/gi, '').trim();
+            if (!nombre) return "Indica el nombre del hábito. Ej: 'Completa el hábito de leer'";
+            const habito = habitos.find(h => h.nombre.toLowerCase().includes(nombre.toLowerCase()));
+            if (!habito) return `No encontré el hábito "${nombre}". Revisa el nombre exacto.`;
+            if (habito.completado) return `El hábito "${habito.nombre}" ya estaba completado hoy. ¡Bien hecho!`;
+            habito.completado = true;
+            guardarHabitos(habitos);
+            registrarHistorial('Completado (IA)', habito.nombre, 'habito', fechaLocal(), '', 'completado');
+            return `✅ ¡Listo! He marcado "${habito.nombre}" como completado. ¡Sigue así!`;
+        }
+        
+        function completarEvento(texto) {
+            let eventos = obtenerEventos();
+            let nombre = texto.replace(/completa|completar|marca|realizado|el evento|la tarea|:/gi, '').trim();
+            if (!nombre) return "Indica el nombre del evento. Ej: 'Completa la tarea de revisar correo'";
+            const evento = eventos.find(e => e.titulo.toLowerCase().includes(nombre.toLowerCase()) && !e.completado);
+            if (!evento) return `No encontré un evento pendiente con nombre "${nombre}".`;
+            const ahora = new Date();
+            const fechaEvento = evento.fecha;
+            const inicio = evento.inicio || evento.hora;
+            if (fechaEvento && inicio) {
+                const fechaHoraInicio = new Date(`${fechaEvento}T${inicio}`);
+                if (ahora < fechaHoraInicio) return `⏳ El evento "${evento.titulo}" aún no ha comenzado (inicia a las ${inicio}). No puedes completarlo antes.`;
+            }
+            evento.completado = true;
+            evento.estadoActual = 'completado';
+            guardarEventos(eventos);
+            registrarHistorial('Completado (IA)', evento.titulo, 'evento', evento.fecha, evento.inicio || evento.hora, 'completado');
+            return `✅ ¡Excelente! Has completado "${evento.titulo}". ¡Productividad al máximo!`;
+        }
+        
+        function eliminarEvento(texto) {
+            let eventos = obtenerEventos();
+            let nombre = texto.replace(/elimina|borra|el evento|la tarea|:/gi, '').trim();
+            const index = eventos.findIndex(e => e.titulo.toLowerCase().includes(nombre.toLowerCase()));
+            if (index === -1) return `No encontré un evento con nombre "${nombre}".`;
+            const eliminado = eventos[index].titulo;
+            eventos.splice(index, 1);
+            guardarEventos(eventos);
+            registrarHistorial('Eliminado (IA)', eliminado, 'evento', fechaLocal(), '', 'eliminado');
+            return `🗑️ He eliminado el evento "${eliminado}".`;
+        }
+        
+        function eliminarHabito(texto) {
+            let habitos = obtenerHabitos();
+            let nombre = texto.replace(/elimina|borra|el habito|:/gi, '').trim();
+            const index = habitos.findIndex(h => h.nombre.toLowerCase().includes(nombre.toLowerCase()));
+            if (index === -1) return `No encontré el hábito "${nombre}".`;
+            const eliminado = habitos[index].nombre;
+            habitos.splice(index, 1);
+            guardarHabitos(habitos);
+            registrarHistorial('Eliminado (IA)', eliminado, 'habito', fechaLocal(), '', 'eliminado');
+            return `🗑️ He eliminado el hábito "${eliminado}".`;
+        }
+        
+        function generarEstadisticas(periodo) {
+            const eventos = obtenerEventos();
+            const habitos = obtenerHabitos();
+            const rachaData = obtenerRachaData();
+            const hoy = fechaLocal();
+            let eventosPeriodo = [];
+            if (periodo === 'hoy') eventosPeriodo = eventos.filter(e => e.fecha === hoy);
+            else if (periodo === 'semana') {
+                const hoyDate = new Date();
+                const inicioSemana = new Date(hoyDate);
+                inicioSemana.setDate(hoyDate.getDate() - hoyDate.getDay());
+                const finSemana = new Date(inicioSemana);
+                finSemana.setDate(inicioSemana.getDate() + 6);
+                eventosPeriodo = eventos.filter(e => e.fecha >= inicioSemana.toISOString().split('T')[0] && e.fecha <= finSemana.toISOString().split('T')[0]);
+            }
+            else if (periodo === 'mes') {
+                const mesActual = hoy.substring(0,7);
+                eventosPeriodo = eventos.filter(e => e.fecha.startsWith(mesActual));
+            }
+            const completados = eventosPeriodo.filter(e => e.completado).length;
+            const total = eventosPeriodo.length;
+            const tasa = total === 0 ? 0 : (completados / total * 100).toFixed(0);
+            const completadosHabitos = habitos.filter(h => h.completado).length;
+            let mensaje = `📊 *Estadísticas de ${periodo === 'hoy' ? 'hoy' : periodo === 'semana' ? 'esta semana' : 'este mes'}*:\n`;
+            mensaje += `✅ Eventos completados: ${completados}/${total} (${tasa}%)\n`;
+            mensaje += `⭐ Hábitos completados hoy: ${completadosHabitos}/${habitos.length}\n`;
+            mensaje += `🔥 Racha actual: ${rachaData.valor} días.\n`;
+            if (tasa >= 80) mensaje += "🎉 ¡Increíble productividad! Sigue así.";
+            else if (tasa >= 50) mensaje += "👍 Vas bien, pero puedes mejorar. ¡Organiza mejor tu tiempo!";
+            else mensaje += "💪 ¡Ánimo! Cada día es una oportunidad para crecer. Empieza con pequeños pasos.";
+            return mensaje;
+        }
+        
+        function consultarHistorial(texto) {
+            let historial = obtenerHistorial();
+            if (historial.length === 0) return "No hay registros en el historial aún.";
+            let fechaFiltro = null;
+            if (texto.includes('hoy')) fechaFiltro = fechaLocal();
+            else if (texto.includes('ayer')) {
+                let ayer = new Date();
+                ayer.setDate(ayer.getDate() - 1);
+                fechaFiltro = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,'0')}-${String(ayer.getDate()).padStart(2,'0')}`;
+            }
+            if (fechaFiltro) historial = historial.filter(h => h.fecha === fechaFiltro);
+            if (historial.length === 0) return `No hay actividad registrada en ${fechaFiltro || 'esa fecha'}.`;
+            let resumen = `📜 *Historial ${fechaFiltro ? `del ${fechaFiltro}` : 'reciente'}*:\n`;
+            historial.slice(0, 10).forEach(h => {
+                resumen += `• ${h.fecha} - ${h.accion}: ${h.nombre} (${h.tipo})\n`;
+            });
+            if (historial.length > 10) resumen += `... y ${historial.length-10} más.`;
+            return resumen;
+        }
+        
+        // ==================== CREACIÓN AVANZADA DE EVENTOS (con todas las validaciones) ====================
+        function crearEventoInteligente(texto) {
+            // Extraer tipo
+            let tipo = "tarea";
+            if (texto.includes("proyecto")) tipo = "proyecto";
+            else if (texto.includes("cena")) tipo = "cena";
+            else if (texto.includes("reunion")) tipo = "reunion";
+            
+            // Eliminar palabras genéricas al inicio
+            let resto = texto.replace(/crea|nuevo|agregar|un|una|:/gi, '').replace(tipo, '').trim();
+            
+            // Extraer título: todo hasta la primera mención de fecha/hora (hoy, mañana, a las, de, el)
+            let titulo = "";
+            let fecha = fechaLocal();
+            let horaInicio = null;
+            let horaFin = null;
+            
+            // Detectar fecha (hoy, mañana, pasado mañana, o fecha específica como "20 de mayo")
+            if (resto.includes("mañana")) {
+                let manana = new Date();
+                manana.setDate(manana.getDate() + 1);
+                fecha = `${manana.getFullYear()}-${String(manana.getMonth()+1).padStart(2,'0')}-${String(manana.getDate()).padStart(2,'0')}`;
+                resto = resto.replace("mañana", "");
+            } else if (resto.includes("pasado mañana")) {
+                let pasado = new Date();
+                pasado.setDate(pasado.getDate() + 2);
+                fecha = `${pasado.getFullYear()}-${String(pasado.getMonth()+1).padStart(2,'0')}-${String(pasado.getDate()).padStart(2,'0')}`;
+                resto = resto.replace("pasado mañana", "");
+            } else if (resto.includes("hoy")) {
+                resto = resto.replace("hoy", "");
+            } else {
+                // Intentar extraer fecha como "20 de mayo"
+                const fechaMatch = resto.match(/(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i);
+                if (fechaMatch) {
+                    const dia = parseInt(fechaMatch[1]);
+                    const meses = { enero:0, febrero:1, marzo:2, abril:3, mayo:4, junio:5, julio:6, agosto:7, septiembre:8, octubre:9, noviembre:10, diciembre:11 };
+                    const mes = meses[fechaMatch[2].toLowerCase()];
+                    let año = new Date().getFullYear();
+                    let fechaObj = new Date(año, mes, dia);
+                    if (fechaObj < new Date()) fechaObj.setFullYear(año+1);
+                    fecha = `${fechaObj.getFullYear()}-${String(fechaObj.getMonth()+1).padStart(2,'0')}-${String(fechaObj.getDate()).padStart(2,'0')}`;
+                    resto = resto.replace(fechaMatch[0], "");
+                }
+            }
+            
+            // Extraer rango de horas: "de 3pm a 5pm" o "a las 4pm"
+            const rangoRegex = /de\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+a\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+            const rangoMatch = resto.match(rangoRegex);
+            if (rangoMatch) {
+                horaInicio = parseHora(rangoMatch[1]);
+                horaFin = parseHora(rangoMatch[2]);
+                resto = resto.replace(rangoMatch[0], "");
+            } else {
+                // Hora única: "a las 4pm"
+                const horaUnicaRegex = /a\s+las\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)/i;
+                const horaMatch = resto.match(horaUnicaRegex);
+                if (horaMatch) {
+                    horaInicio = parseHora(horaMatch[1]);
+                    resto = resto.replace(horaMatch[0], "");
+                }
+            }
+            
+            // Si no se encontró hora, preguntar (pero aquí solo devolvemos error)
+            if (!horaInicio) {
+                return "⚠️ No pude entender la hora. Por favor, indícala con 'a las 4pm' o 'de 3pm a 5pm'.";
+            }
+            
+            // Para tareas y proyectos, si falta hora fin, la igualamos a inicio + 1h (o podemos pedirla)
+            if ((tipo === 'tarea' || tipo === 'proyecto') && !horaFin) {
+                // Calcular hora fin = inicio + 1 hora
+                let [hh, mm] = horaInicio.split(':').map(Number);
+                let fechaFin = new Date();
+                fechaFin.setHours(hh+1, mm);
+                horaFin = `${String(fechaFin.getHours()).padStart(2,'0')}:${String(fechaFin.getMinutes()).padStart(2,'0')}`;
+                // Notificar al usuario que asumimos 1 hora de duración
+                // (pero lo hacemos internamente)
+            }
+            
+            // Validar hora de inicio (20 min si es hoy)
+            const vInicio = validarHoraInicio(fecha, horaInicio);
+            if (!vInicio.ok) return vInicio.msg;
+            
+            // Validar hora fin > inicio (solo para tarea/proyecto)
+            if ((tipo === 'tarea' || tipo === 'proyecto') && horaFin) {
+                const vFin = validarHorasFin(horaInicio, horaFin);
+                if (!vFin.ok) return vFin.msg;
+            }
+            
+            // Anticipación por defecto 30 minutos, pero la validaremos
+            let anticipacion = 30;
+            const vAntic = validarAnticipacion(fecha, horaInicio, anticipacion);
+            if (!vAntic.ok) return vAntic.msg;
+            
+            // Extraer título: todo lo que queda después de quitar fechas y horas
+            titulo = resto.replace(/a las|para el|de la|de las|hasta las|y|,/gi, '').trim();
+            if (!titulo) titulo = `Evento ${tipo} rápido`;
+            
+            // Crear evento
+            let evento = {
+                id: Date.now(),
+                tipo: tipo,
+                titulo: titulo,
+                descripcion: "Creado mediante asistente IA",
+                completado: false,
+                estadoActual: "pendiente",
+                estadoRegistrado: null,
+                notificado: false,
+                fecha: fecha,
+                anticipacion: String(anticipacion)
+            };
+            if (tipo === 'tarea' || tipo === 'proyecto') {
+                evento.inicio = horaInicio;
+                evento.fin = horaFin || horaInicio;
+            } else {
+                evento.hora = horaInicio;
+            }
+            if (tipo === 'proyecto') evento.tareas = [];
+            
+            let eventos = obtenerEventos();
+            eventos.push(evento);
+            guardarEventos(eventos);
+            registrarHistorial('Creado (IA)', titulo, 'evento', fecha, horaInicio, 'creado');
+            
+            let mensaje = `✅ ¡Creado! ${tipo.charAt(0).toUpperCase() + tipo.slice(1)} "<strong>${titulo}</strong>" para el ${fecha} a las ${horaInicio}`;
+            if (horaFin && (tipo === 'tarea' || tipo === 'proyecto')) mensaje += ` hasta las ${horaFin}`;
+            mensaje += `. ${vAntic.ok ? 'Recibirás un recordatorio 30 minutos antes.' : 'No se pudo configurar recordatorio.'}`;
+            return mensaje;
+        }
+        
+        // Función auxiliar para convertir "3pm" a "15:00"
+        function parseHora(texto) {
+            texto = texto.trim().toLowerCase();
+            let horas = 0, minutos = 0;
+            const match = texto.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+            if (!match) return "12:00";
+            horas = parseInt(match[1]);
+            if (match[2]) minutos = parseInt(match[2]);
+            const ampm = match[3];
+            if (ampm === 'pm' && horas !== 12) horas += 12;
+            if (ampm === 'am' && horas === 12) horas = 0;
+            return `${String(horas).padStart(2,'0')}:${String(minutos).padStart(2,'0')}`;
+        }
+        
+        // ==================== INTERFAZ DE CHAT ====================
+        const chatBox = document.getElementById('chatBox');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingInd = document.getElementById('typingIndicator');
+        
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.classList.add('message', sender);
+            div.innerHTML = text;
+            chatBox.insertBefore(div, typingInd);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function setLoading(val) {
+            sendBtn.disabled = val;
+            userInput.disabled = val;
+            typingInd.classList.toggle('show', val);
+        }
+        
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text || sendBtn.disabled) return;
+            addMessage(text, 'user');
+            userInput.value = '';
+            setLoading(true);
+            
+            setTimeout(() => {
+                const respuesta = procesarIntencion(text);
+                addMessage(respuesta, 'ai');
+                setLoading(false);
+                userInput.focus();
+            }, 500);
+        }
+        
+        function sendChip(texto) {
+            userInput.value = texto;
+            sendMessage();
+        }
+        
+        userInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+        
+        function toggleMenu() {
+            document.querySelector('.hamburger-menu').classList.toggle('active');
+            document.getElementById('sidebarMenu').classList.toggle('active');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+        function closeSidebar() {
+            document.querySelector('.hamburger-menu').classList.remove('active');
+            document.getElementById('sidebarMenu').classList.remove('active');
+            document.getElementById('sidebarOverlay').classList.remove('active');
+        }
+        function cerrarSesion() {
+            localStorage.removeItem('usuarioActivo');
+            localStorage.removeItem('usuarioNombre');
+            localStorage.removeItem('usuarioTelefono');
+            localStorage.removeItem('sesionActiva');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
